@@ -5,7 +5,7 @@ use color_eyre::{
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Alignment, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::Stylize,
     symbols::border,
     text::{Line, Text},
@@ -25,18 +25,50 @@ pub struct App {
     exit: bool,
 }
 
+pub struct CounterWidget {
+    counter: u8,
+}
+
+impl CounterWidget {
+    pub fn new(counter: u8) -> Self {
+        Self { counter }
+    }
+}
+
+impl Widget for CounterWidget {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let greeting = format!("Hello, {}!", self.name);
+        buf.set_string(area.x, area.y, greeting, Style::default());
+    }
+}
+
+// fn ui(frame: &mut Frame, app: &App) {
+// }
+
 impl App {
     /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
-            terminal.draw(|frame| self.render_frame(frame))?;
+            terminal.draw(|frame| {
+                ui(frame, self);
+                self.render_frame(frame);
+                // self.render_frame(frame)
+            })?;
             self.handle_events().wrap_err("handle events failed")?;
         }
         Ok(())
     }
 
-    fn render_frame(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.size());
+    fn render_layout(&self, frame: &mut Frame) {
+        // let layout = Layout::default()
+        //     .direction(Direction::Horizontal)
+        //     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+        //     .split(frame.size());
+        //
+        // frame.render_widget(Block::new().title("Left Block"), layout[0]);
+        // frame.render_widget(Block::new().title("Left Block"), layout[1]);
+
+        frame.render_widget(app, frame.size());
     }
 
     /// updates the application's state based on user input
@@ -82,12 +114,12 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Counter App Tutorial ".bold());
+        let title = Title::from(" Tomato ".bold());
         let instructions = Title::from(Line::from(vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
+            " Start ".into(),
+            "<Space>".blue().bold(),
+            " History ".into(),
+            "<H>".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));
@@ -101,7 +133,7 @@ impl Widget for &App {
             .border_set(border::THICK);
 
         let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
+            "Start Session ".into(),
             self.counter.to_string().yellow(),
         ])]);
 
@@ -133,7 +165,7 @@ mod tests {
         app.render(buf.area, &mut buf);
 
         let mut expected = Buffer::with_lines(vec![
-            "┏━━━━━━━━━━━━━ Counter App Tutorial ━━━━━━━━━━━━━┓",
+            "┏━━━━━━━━━━━━━━━━━━━━ Tomato ━━━━━━━━━━━━━━━━━━━━┓",
             "┃                    Value: 0                    ┃",
             "┃                                                ┃",
             "┗━ Decrement <Left> Increment <Right> Quit <Q> ━━┛",
