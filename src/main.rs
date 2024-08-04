@@ -5,7 +5,7 @@ use color_eyre::{
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Alignment, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::Stylize,
     symbols::border,
     text::{Line, Text},
@@ -82,12 +82,12 @@ impl App {
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Counter App Tutorial ".bold());
+        let title = Title::from(" Tomato ".bold());
         let instructions = Title::from(Line::from(vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
+            " Start ".into(),
+            "<Space>".blue().bold(),
+            " History ".into(),
+            "<H>".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));
@@ -100,8 +100,13 @@ impl Widget for &App {
             )
             .border_set(border::THICK);
 
+        let layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(frame.size());
+
         let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
+            "Start Timer ".into(),
             self.counter.to_string().yellow(),
         ])]);
 
@@ -133,7 +138,7 @@ mod tests {
         app.render(buf.area, &mut buf);
 
         let mut expected = Buffer::with_lines(vec![
-            "┏━━━━━━━━━━━━━ Counter App Tutorial ━━━━━━━━━━━━━┓",
+            "┏━━━━━━━━━━━━━━━━━━━━ Tomato ━━━━━━━━━━━━━━━━━━━━┓",
             "┃                    Value: 0                    ┃",
             "┃                                                ┃",
             "┗━ Decrement <Left> Increment <Right> Quit <Q> ━━┛",
