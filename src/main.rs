@@ -11,104 +11,48 @@ use ratatui::{
     text::{Line, Text},
     widgets::{
         block::{Position, Title},
-        Block, Paragraph, Widget,
+        Block, BorderType, Borders, Paragraph, Widget,
     },
     Frame,
 };
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 mod errors;
 mod tui;
 
-#[derive(Debug, Default)]
+pub struct Session {
+    start: SystemTime,
+    end: Option<SystemTime>,
+}
+
+impl Session {
+    pub fn new() -> Self {
+        Self {
+            start: SystemTime::now(),
+            end: None,
+        }
+    }
+}
+
+#[derive(Default)]
 pub struct App {
-    counter: u8,
     exit: bool,
+    current_session: Option<Session>,
 }
 
 pub struct CounterWidget {
-    counter: u8,
-}
-
-impl CounterWidget {
-    pub fn new(counter: u8) -> Self {
-        Self { counter }
-    }
+    time: Duration,
 }
 
 impl Widget for CounterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let greeting = format!("Hello, {}!", self.name);
-        buf.set_string(area.x, area.y, greeting, Style::default());
-    }
-}
-
-// fn ui(frame: &mut Frame, app: &App) {
-// }
-
-impl App {
-    /// runs the application's main loop until the user quits
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
-        while !self.exit {
-            terminal.draw(|frame| {
-                ui(frame, self);
-                self.render_frame(frame);
-                // self.render_frame(frame)
-            })?;
-            self.handle_events().wrap_err("handle events failed")?;
-        }
-        Ok(())
-    }
-
-    fn render_layout(&self, frame: &mut Frame) {
-        // let layout = Layout::default()
-        //     .direction(Direction::Horizontal)
-        //     .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
-        //     .split(frame.size());
-        //
-        // frame.render_widget(Block::new().title("Left Block"), layout[0]);
-        // frame.render_widget(Block::new().title("Left Block"), layout[1]);
-
-        frame.render_widget(app, frame.size());
-    }
-
-    /// updates the application's state based on user input
-    fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            // it's important to check that the event is a key press event as
-            // crossterm also emits key release and repeat events on Windows.
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => self
-                .handle_key_event(key_event)
-                .wrap_err_with(|| format!("handling key event failed:\n{key_event:#?}")),
-            _ => Ok(()),
-        };
-        Ok(())
-    }
-
-    fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            KeyCode::Left => self.decrement_counter()?,
-            KeyCode::Right => self.increment_counter()?,
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn exit(&mut self) {
-        self.exit = true;
-    }
-
-    fn increment_counter(&mut self) -> Result<()> {
-        self.counter += 1;
-        if self.counter > 2 {
-            bail!("counter overflow");
-        }
-        Ok(())
-    }
-
-    fn decrement_counter(&mut self) -> Result<()> {
-        self.counter -= 1;
-        Ok(())
+        // println!("session running");
+        let counter_widget = Block::bordered().title("Session running");
+        Paragraph::new(format!("Time: {:?}", self.time).as_str())
+            .centered()
+            .block(counter_widget)
+            .render(Rect::new(25, 25, 25, 10), buf);
     }
 }
 
@@ -123,24 +67,74 @@ impl Widget for &App {
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));
-        let block = Block::bordered()
+        Block::bordered()
             .title(title.alignment(Alignment::Center))
             .title(
                 instructions
                     .alignment(Alignment::Center)
                     .position(Position::Bottom),
             )
-            .border_set(border::THICK);
-
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Start Session ".into(),
-            self.counter.to_string().yellow(),
-        ])]);
-
-        Paragraph::new(counter_text)
-            .centered()
-            .block(block)
+            .border_set(border::THICK)
             .render(area, buf);
+    }
+}
+
+impl App {
+    /// runs the application's main loop until the user quits
+    pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
+        while !self.exit {
+            terminal.draw(|frame| {
+                self.render_layout(frame);
+            })?;
+            self.handle_events().wrap_err("Event handling failed")?;
+
+            thread::sleep(Duration::from_millis(250));
+        }
+        // }
+        Ok(())
+    }
+
+    fn render_layout(&self, frame: &mut Frame) {
+        frame.render_widget(self, frame.size());
+        if let Some(session) = &self.current_session {
+            let time = SystemTime::now().duration_since(session.start).unwrap();
+            // let seconds = time.as_secs();
+            let counter_widget = CounterWidget { time };
+            frame.render_widget(counter_widget, frame.size());
+        }
+    }
+
+    /// updates the application's state based on user input
+    fn handle_events(&mut self) -> Result<()> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.handle_key_event(key_event);
+                Ok(())
+            }
+            // .wrap_err_with(|| format!("handling key event failed:\n{key_event:#?}")),
+            _ => Ok(()),
+        }
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q') => self.exit(),
+            KeyCode::Char(' ') => self.toggle_session(),
+            _ => {}
+        }
+        // Ok(())
+    }
+
+    fn toggle_session(&mut self) {
+        if self.current_session.is_none() {
+            self.current_session = Some(Session::new());
+        } else {
+            self.current_session = None;
+        }
+    }
+
+    fn exit(&mut self) {
+        self.exit = true;
     }
 }
 
