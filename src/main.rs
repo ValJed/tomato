@@ -16,10 +16,12 @@ use std::time::{Duration, SystemTime};
 
 mod errors;
 mod tui;
+mod utils;
 
 pub struct Session {
     start: SystemTime,
     end: Option<SystemTime>,
+    duration: i32,
 }
 
 impl Session {
@@ -27,6 +29,7 @@ impl Session {
         Self {
             start: SystemTime::now(),
             end: None,
+            duration: 25,
         }
     }
 }
@@ -38,12 +41,11 @@ pub struct App {
 }
 
 pub struct CounterWidget {
-    time: Duration,
+    time: String,
 }
 
 impl Widget for CounterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // println!("session running");
         let counter_widget = Block::bordered().title("Session running");
         Paragraph::new(format!("Time: {:?}", self.time).as_str())
             .centered()
@@ -76,14 +78,13 @@ impl Widget for &App {
 }
 
 impl App {
-    /// runs the application's main loop until the user quits
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
             terminal.draw(|frame| {
                 self.render_layout(frame);
             })?;
 
-            if event::poll(Duration::from_millis(250))? {
+            if event::poll(Duration::from_millis(100))? {
                 let event = event::read()?;
                 self.handle_events(event);
             }
@@ -94,9 +95,9 @@ impl App {
     fn render_layout(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
         if let Some(session) = &self.current_session {
-            let time = SystemTime::now().duration_since(session.start).unwrap();
-            // let seconds = time.as_secs();
-            let counter_widget = CounterWidget { time };
+            let counter_widget = CounterWidget {
+                time: utils::render_timer(session.start, session.duration),
+            };
             frame.render_widget(counter_widget, frame.area());
         }
     }
@@ -139,73 +140,4 @@ fn main() -> Result<()> {
     App::default().run(&mut terminal)?;
     tui::restore()?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ratatui::style::Style;
-
-    #[test]
-    fn render() {
-        let app = App::default();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 50, 4));
-
-        app.render(buf.area, &mut buf);
-
-        let mut expected = Buffer::with_lines(vec![
-            "┏━━━━━━━━━━━━━━━━━━━━ Tomato ━━━━━━━━━━━━━━━━━━━━┓",
-            "┃                    Value: 0                    ┃",
-            "┃                                                ┃",
-            "┗━ Decrement <Left> Increment <Right> Quit <Q> ━━┛",
-        ]);
-        let title_style = Style::new().bold();
-        let counter_style = Style::new().yellow();
-        let key_style = Style::new().blue().bold();
-        expected.set_style(Rect::new(14, 0, 22, 1), title_style);
-        expected.set_style(Rect::new(28, 1, 1, 1), counter_style);
-        expected.set_style(Rect::new(13, 3, 6, 1), key_style);
-        expected.set_style(Rect::new(30, 3, 7, 1), key_style);
-        expected.set_style(Rect::new(43, 3, 4, 1), key_style);
-
-        // note ratatui also has an assert_buffer_eq! macro that can be used to
-        // compare buffers and display the differences in a more readable way
-        assert_eq!(buf, expected);
-    }
-
-    #[test]
-    fn handle_key_event() -> Result<()> {
-        let mut app = App::default();
-        app.handle_key_event(KeyCode::Right.into()).unwrap();
-        assert_eq!(app.counter, 1);
-
-        app.handle_key_event(KeyCode::Left.into()).unwrap();
-        assert_eq!(app.counter, 0);
-
-        let mut app = App::default();
-        app.handle_key_event(KeyCode::Char('q').into()).unwrap();
-        assert_eq!(app.exit, true);
-
-        Ok(())
-    }
-
-    #[test]
-    #[should_panic(expected = "attempt to subtract with overflow")]
-    fn handle_key_event_panic() {
-        let mut app = App::default();
-        let _ = app.handle_key_event(KeyCode::Left.into());
-    }
-
-    #[test]
-    fn handle_key_event_overflow() {
-        let mut app = App::default();
-        assert!(app.handle_key_event(KeyCode::Right.into()).is_ok());
-        assert!(app.handle_key_event(KeyCode::Right.into()).is_ok());
-        assert_eq!(
-            app.handle_key_event(KeyCode::Right.into())
-                .unwrap_err()
-                .to_string(),
-            "counter overflow"
-        );
-    }
 }
