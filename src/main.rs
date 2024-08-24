@@ -1,21 +1,17 @@
-use color_eyre::{
-    eyre::{bail, WrapErr},
-    Result,
-};
+use color_eyre::Result;
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Rect},
     style::Stylize,
     symbols::border,
-    text::{Line, Text},
+    text::Line,
     widgets::{
         block::{Position, Title},
-        Block, BorderType, Borders, Paragraph, Widget,
+        Block, Paragraph, Widget,
     },
     Frame,
 };
-use std::thread;
 use std::time::{Duration, SystemTime};
 
 mod errors;
@@ -86,11 +82,12 @@ impl App {
             terminal.draw(|frame| {
                 self.render_layout(frame);
             })?;
-            self.handle_events().wrap_err("Event handling failed")?;
 
-            thread::sleep(Duration::from_millis(250));
+            if event::poll(Duration::from_millis(250))? {
+                let event = event::read()?;
+                self.handle_events(event);
+            }
         }
-        // }
         Ok(())
     }
 
@@ -105,14 +102,12 @@ impl App {
     }
 
     /// updates the application's state based on user input
-    fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
+    fn handle_events(&mut self, event: Event) {
+        match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event);
-                Ok(())
             }
-            // .wrap_err_with(|| format!("handling key event failed:\n{key_event:#?}")),
-            _ => Ok(()),
+            _ => {}
         }
     }
 
