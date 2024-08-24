@@ -1,14 +1,14 @@
-use color_eyre::Result;
+use color_eyre::{owo_colors::OwoColorize, Result};
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-    layout::{Alignment, Rect},
+    layout::{Alignment, Constraint, Flex, Layout, Rect},
     style::Stylize,
     symbols::border,
-    text::Line,
+    text::{Line, Text},
     widgets::{
         block::{Position, Title},
-        Block, Paragraph, Widget,
+        Block, Padding, Paragraph, Widget,
     },
     Frame,
 };
@@ -18,18 +18,25 @@ mod errors;
 mod tui;
 mod utils;
 
+enum SessionType {
+    Work,
+    Break,
+}
+
 pub struct Session {
     start: SystemTime,
     end: Option<SystemTime>,
     duration: i32,
+    session_type: SessionType,
 }
 
 impl Session {
-    pub fn new() -> Self {
+    pub fn new(session_type: SessionType) -> Self {
         Self {
             start: SystemTime::now(),
             end: None,
             duration: 25,
+            session_type,
         }
     }
 }
@@ -46,19 +53,31 @@ pub struct CounterWidget {
 
 impl Widget for CounterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let counter_widget = Block::bordered().title("Session running");
-        Paragraph::new(format!("Time: {:?}", self.time).as_str())
+        let title = Title::from(" Work Session ".bold());
+        let block = Block::bordered()
+            .title(title.alignment(Alignment::Center))
+            .padding(Padding::new(1, 1, 1, 1));
+        let counter_area = center(area, Constraint::Length(25), Constraint::Length(5));
+
+        let time = format!("Time: {}", self.time);
+        Paragraph::new(time)
             .centered()
-            .block(counter_widget)
-            .render(Rect::new(25, 25, 25, 10), buf);
+            .block(block)
+            .render(counter_area, buf);
     }
 }
 
+// Render the main application widget
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Title::from(" Tomato ".bold());
+        let toggle_session = if self.current_session.is_none() {
+            " Start "
+        } else {
+            " Stop "
+        };
         let instructions = Title::from(Line::from(vec![
-            " Start ".into(),
+            toggle_session.into(),
             "<Space>".blue().bold(),
             " History ".into(),
             "<H>".blue().bold(),
@@ -75,6 +94,14 @@ impl Widget for &App {
             .border_set(border::THICK)
             .render(area, buf);
     }
+}
+
+fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
+    let [area] = Layout::horizontal([horizontal])
+        .flex(Flex::Center)
+        .areas(area);
+    let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
+    area
 }
 
 impl App {
@@ -123,8 +150,9 @@ impl App {
 
     fn toggle_session(&mut self) {
         if self.current_session.is_none() {
-            self.current_session = Some(Session::new());
+            self.current_session = Some(Session::new(SessionType::Work));
         } else {
+            // TODO: Implement break session
             self.current_session = None;
         }
     }
