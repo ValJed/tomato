@@ -92,12 +92,12 @@ impl App {
     }
 
     fn render_layout(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.size());
+        frame.render_widget(self, frame.area());
         if let Some(session) = &self.current_session {
             let time = SystemTime::now().duration_since(session.start).unwrap();
             // let seconds = time.as_secs();
             let counter_widget = CounterWidget { time };
-            frame.render_widget(counter_widget, frame.size());
+            frame.render_widget(counter_widget, frame.area());
         }
     }
 
