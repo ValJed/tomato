@@ -18,9 +18,23 @@ mod errors;
 mod tui;
 mod utils;
 
+#[derive(Copy, Clone)]
 enum SessionType {
     Work,
     Break,
+}
+
+// #[derive(Default)]
+enum State {
+    None,
+    WorkSession,
+    BreakSession,
+    ConfirmBreak,
+    ChooseTime
+}
+
+impl Default for State {
+    fn default() -> Self { State::None }
 }
 
 pub struct Session {
@@ -43,17 +57,25 @@ impl Session {
 
 #[derive(Default)]
 pub struct App {
+    state: State,
     exit: bool,
     current_session: Option<Session>,
+
 }
 
 pub struct CounterWidget {
     time: String,
+    session_type: SessionType
 }
 
 impl Widget for CounterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Work Session ".bold());
+        let session_type = if let SessionType::Work = self.session_type {
+            " Work Session "
+        } else {
+            " Break Session "
+        };
+        let title = Title::from(session_type.bold());
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center))
             .padding(Padding::new(1, 1, 1, 1));
@@ -64,6 +86,23 @@ impl Widget for CounterWidget {
             .centered()
             .block(block)
             .render(counter_area, buf);
+    }
+}
+
+pub struct ConfirmWidget {}
+
+impl Widget for ConfirmWidget {
+    fn render(self, area: Rect, buf: &mut Buffer)  {
+        let title = Title::from(" Do you need a break? ");
+        let block = Block::bordered()
+            .title(title.alignment(Alignment::Center))
+            .padding(Padding::new(1, 1, 1, 1));
+        let confirm_area = center(area, Constraint::Length(25), Constraint::Length(5));
+
+        Paragraph::new("(y)es  (n)o")
+            .centered()
+            .block(block)
+            .render(confirm_area, buf)
     }
 }
 
@@ -121,11 +160,20 @@ impl App {
 
     fn render_layout(&self, frame: &mut Frame) {
         frame.render_widget(self, frame.area());
-        if let Some(session) = &self.current_session {
-            let counter_widget = CounterWidget {
-                time: utils::render_timer(session.start, session.duration),
-            };
-            frame.render_widget(counter_widget, frame.area());
+        match &self.state {
+            State::WorkSession => {
+                let session = self.current_session.as_ref().unwrap();
+                let counter_widget = CounterWidget {
+                    time: utils::render_timer(session.start, session.duration),
+                    session_type: session.session_type
+                };
+                frame.render_widget(counter_widget, frame.area());
+            }
+            State::BreakSession => {}
+            State::ConfirmBreak => {
+                frame.render_widget(ConfirmWidget {}, frame.area());
+            }
+            _ => {}
         }
     }
 
@@ -143,17 +191,37 @@ impl App {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char(' ') => self.toggle_session(),
+            KeyCode::Char('y') => {
+                if let State::ConfirmBreak = self.state {
+                    self.start_work_session();
+                }
+            }
+            KeyCode::Char('n') => {
+                if let State::ConfirmBreak = self.state {
+                    self.start_break_session();
+                }
+            }
             _ => {}
         }
         // Ok(())
     }
 
+    fn start_work_session(&mut self) {
+        self.state = State::WorkSession;
+        self.current_session = Some(Session::new(SessionType::Work));
+    }
+
+    fn start_break_session(&mut self) {
+        self.state = State::BreakSession;
+        self.current_session = Some(Session::new(SessionType::Break));
+    }
+
     fn toggle_session(&mut self) {
         if self.current_session.is_none() {
-            self.current_session = Some(Session::new(SessionType::Work));
+            self.start_work_session()
         } else {
-            // TODO: Implement break session
             self.current_session = None;
+            self.state = State::ConfirmBreak;
         }
     }
 
