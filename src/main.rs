@@ -18,7 +18,7 @@ mod errors;
 mod tui;
 mod utils;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum SessionType {
     Work,
     Break,
@@ -30,11 +30,14 @@ enum State {
     WorkSession,
     BreakSession,
     ConfirmBreak,
-    ChooseTime
+    ConfirmWork,
+    ChooseTime,
 }
 
 impl Default for State {
-    fn default() -> Self { State::None }
+    fn default() -> Self {
+        State::None
+    }
 }
 
 pub struct Session {
@@ -45,11 +48,11 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(session_type: SessionType) -> Self {
+    pub fn new(session_type: SessionType, duration: i32) -> Self {
         Self {
             start: SystemTime::now(),
             end: None,
-            duration: 25,
+            duration,
             session_type,
         }
     }
@@ -60,12 +63,11 @@ pub struct App {
     state: State,
     exit: bool,
     current_session: Option<Session>,
-
 }
 
 pub struct CounterWidget {
     time: String,
-    session_type: SessionType
+    session_type: SessionType,
 }
 
 impl Widget for CounterWidget {
@@ -89,11 +91,13 @@ impl Widget for CounterWidget {
     }
 }
 
-pub struct ConfirmWidget {}
+pub struct ConfirmWidget {
+    question: String,
+}
 
 impl Widget for ConfirmWidget {
-    fn render(self, area: Rect, buf: &mut Buffer)  {
-        let title = Title::from(" Do you need a break? ");
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let title = Title::from(self.question);
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center))
             .padding(Padding::new(1, 1, 1, 1));
@@ -165,13 +169,33 @@ impl App {
                 let session = self.current_session.as_ref().unwrap();
                 let counter_widget = CounterWidget {
                     time: utils::render_timer(session.start, session.duration),
-                    session_type: session.session_type
+                    session_type: session.session_type,
                 };
                 frame.render_widget(counter_widget, frame.area());
             }
-            State::BreakSession => {}
+            State::BreakSession => {
+                let session = self.current_session.as_ref().unwrap();
+                let counter_widget = CounterWidget {
+                    time: utils::render_timer(session.start, session.duration),
+                    session_type: session.session_type,
+                };
+                frame.render_widget(counter_widget, frame.area());
+            }
             State::ConfirmBreak => {
-                frame.render_widget(ConfirmWidget {}, frame.area());
+                frame.render_widget(
+                    ConfirmWidget {
+                        question: String::from(" Do you need a break? "),
+                    },
+                    frame.area(),
+                );
+            }
+            State::ConfirmWork => {
+                frame.render_widget(
+                    ConfirmWidget {
+                        question: String::from(" Back to work? "),
+                    },
+                    frame.area(),
+                );
             }
             _ => {}
         }
@@ -191,16 +215,16 @@ impl App {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char(' ') => self.toggle_session(),
-            KeyCode::Char('y') => {
-                if let State::ConfirmBreak = self.state {
-                    self.start_work_session();
-                }
-            }
-            KeyCode::Char('n') => {
-                if let State::ConfirmBreak = self.state {
-                    self.start_break_session();
-                }
-            }
+            KeyCode::Char('y') => match self.state {
+                State::ConfirmBreak => self.start_break_session(),
+                State::ConfirmWork => self.start_work_session(),
+                _ => {}
+            },
+            KeyCode::Char('n') => match self.state {
+                State::ConfirmBreak => self.start_work_session(),
+                State::ConfirmWork => self.start_break_session(),
+                _ => {}
+            },
             _ => {}
         }
         // Ok(())
@@ -208,20 +232,29 @@ impl App {
 
     fn start_work_session(&mut self) {
         self.state = State::WorkSession;
-        self.current_session = Some(Session::new(SessionType::Work));
+        self.current_session = Some(Session::new(SessionType::Work, 25));
     }
 
     fn start_break_session(&mut self) {
         self.state = State::BreakSession;
-        self.current_session = Some(Session::new(SessionType::Break));
+        self.current_session = Some(Session::new(SessionType::Break, 5));
     }
 
     fn toggle_session(&mut self) {
         if self.current_session.is_none() {
-            self.start_work_session()
-        } else {
-            self.current_session = None;
-            self.state = State::ConfirmBreak;
+            self.start_work_session();
+            return;
+        }
+
+        self.current_session = None;
+        match self.state {
+            State::WorkSession => {
+                self.state = State::ConfirmBreak;
+            }
+            State::BreakSession => {
+                self.state = State::ConfirmWork;
+            }
+            _ => {}
         }
     }
 
