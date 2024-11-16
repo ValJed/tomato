@@ -1,11 +1,16 @@
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use std::time::SystemTime;
 
-pub fn render_timer(start: SystemTime, duration: i32) -> String {
+pub fn render_timer(start: SystemTime, duration: i32) -> Option<String> {
     let duration_secs: f32 = duration as f32 * 60.0;
     let time = SystemTime::now().duration_since(start).unwrap().as_secs() as f32;
     let countdown_secs = duration_secs - time;
 
-    to_time_str(countdown_secs)
+    if countdown_secs < 1.0 {
+        return None;
+    }
+
+    Some(to_time_str(countdown_secs))
 }
 
 pub fn to_time_str(seconds: f32) -> String {
@@ -18,6 +23,14 @@ pub fn to_time_str(seconds: f32) -> String {
     let remaining_seconds = (minutes.fract() * 60.0).round() as i32; // Calculate remaining seconds
 
     return format!("{}m {}s", minutes_whole, remaining_seconds);
+}
+
+pub fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
+    let [area] = Layout::horizontal([horizontal])
+        .flex(Flex::Center)
+        .areas(area);
+    let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
+    area
 }
 
 #[cfg(test)]
@@ -35,7 +48,7 @@ mod tests {
     #[test]
     fn test_render_timer() {
         let start = SystemTime::now();
-        assert_eq!(render_timer(start, 1), "1m 0s");
-        assert_eq!(render_timer(start, 3), "3m 0s");
+        assert_eq!(render_timer(start, 1), Some("1m 0s"));
+        assert_eq!(render_timer(start, 3), Some("3m 0s"));
     }
 }
