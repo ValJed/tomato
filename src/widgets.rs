@@ -13,6 +13,31 @@ use ratatui::{
 use crate::structs::{Session, SessionType, State};
 use crate::utils::center;
 
+pub struct InputWidget {
+    pub input: String,
+    pub session_type: SessionType,
+}
+
+impl Widget for InputWidget {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let widget_title = if let SessionType::Work = self.session_type {
+            " Work Session Time: "
+        } else {
+            " Break Session Time: "
+        };
+        let title = Title::from(widget_title);
+        let block = Block::bordered()
+            .title(title.alignment(Alignment::Left))
+            .padding(Padding::new(1, 1, 1, 1));
+        let counter_area = center(area, Constraint::Length(25), Constraint::Length(5));
+
+        Paragraph::new(self.input)
+            .centered()
+            .block(block)
+            .render(counter_area, buf);
+    }
+}
+
 pub struct CounterWidget {
     pub time: String,
     pub session_type: SessionType,
@@ -63,6 +88,7 @@ pub struct App {
     pub state: State,
     pub exit: bool,
     pub current_session: Option<Session>,
+    pub input: String,
 }
 
 // Render the main application widget

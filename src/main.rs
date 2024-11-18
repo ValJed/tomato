@@ -20,7 +20,10 @@ mod utils;
 mod widgets;
 
 use structs::{Session, SessionType, State};
-use widgets::{App, ConfirmWidget, CounterWidget};
+use widgets::{App, ConfirmWidget, CounterWidget, InputWidget};
+
+const BREAK_DEFAULT: i32 = 5;
+const WORK_DEFAULT: i32 = 25;
 
 impl App {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
@@ -82,6 +85,21 @@ impl App {
                     frame.area(),
                 );
             }
+            State::WorkInput => frame.render_widget(
+                InputWidget {
+                    session_type: SessionType::Work,
+                    input: self.input.clone(),
+                },
+                frame.area(),
+            ),
+
+            State::BreakInput => frame.render_widget(
+                InputWidget {
+                    session_type: SessionType::Break,
+                    input: self.input.clone(),
+                },
+                frame.area(),
+            ),
             _ => {}
         }
     }
@@ -89,9 +107,11 @@ impl App {
     /// updates the application's state based on user input
     fn handle_events(&mut self, event: Event) {
         match event {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event);
-            }
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => match self.state {
+                State::WorkInput => self.handle_input(key_event),
+                State::BreakInput => self.handle_input(key_event),
+                _ => self.handle_key_event(key_event),
+            },
             _ => {}
         }
     }
@@ -101,13 +121,24 @@ impl App {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char(' ') => self.toggle_session(),
             KeyCode::Char('y') => match self.state {
-                State::ConfirmBreak => self.start_break_session(),
-                State::ConfirmWork => self.start_work_session(),
+                State::ConfirmBreak => self.start_break_input(),
+                State::ConfirmWork => self.start_work_input(),
                 _ => {}
             },
             KeyCode::Char('n') => match self.state {
-                State::ConfirmBreak => self.start_work_session(),
-                State::ConfirmWork => self.start_break_session(),
+                State::ConfirmBreak => self.start_work_input(),
+                State::ConfirmWork => self.start_break_input(),
+                _ => {}
+            },
+            KeyCode::Char('t') => match self.state {
+                State::ConfirmBreak => {
+                    self.input = BREAK_DEFAULT.to_string();
+                    self.state = State::BreakInput;
+                }
+                State::ConfirmWork => {
+                    self.input = WORK_DEFAULT.to_string();
+                    self.state = State::WorkInput
+                }
                 _ => {}
             },
             _ => {}
@@ -115,14 +146,54 @@ impl App {
         // Ok(())
     }
 
+    fn handle_input(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char('q') => self.exit(),
+            KeyCode::Char('0') => self.input = self.input.clone() + "0",
+            KeyCode::Char('1') => self.input = self.input.clone() + "1",
+            KeyCode::Char('2') => self.input = self.input.clone() + "2",
+            KeyCode::Char('3') => self.input = self.input.clone() + "3",
+            KeyCode::Char('4') => self.input = self.input.clone() + "4",
+            KeyCode::Char('5') => self.input = self.input.clone() + "5",
+            KeyCode::Char('6') => self.input = self.input.clone() + "6",
+            KeyCode::Char('7') => self.input = self.input.clone() + "7",
+            KeyCode::Char('8') => self.input = self.input.clone() + "8",
+            KeyCode::Char('9') => self.input = self.input.clone() + "9",
+            KeyCode::Backspace => {
+                let mut chars = self.input.chars();
+                chars.next_back();
+                self.input = chars.as_str().into();
+            }
+            KeyCode::Enter => match self.state {
+                State::WorkInput => self.start_work_session(),
+                State::BreakInput => self.start_break_session(),
+                _ => {}
+            },
+
+            _ => {}
+        }
+    }
+
+    fn start_work_input(&mut self) {
+        self.input = WORK_DEFAULT.to_string();
+        self.state = State::WorkInput
+    }
+
+    fn start_break_input(&mut self) {
+        self.input = BREAK_DEFAULT.to_string();
+        self.state = State::BreakInput;
+    }
+
     fn start_work_session(&mut self) {
+        let time: i32 = self.input.parse().unwrap_or(25);
         self.state = State::WorkSession;
-        self.current_session = Some(Session::new(SessionType::Work, 1));
+        self.current_session = Some(Session::new(SessionType::Work, time));
     }
 
     fn start_break_session(&mut self) {
+        let time: i32 = self.input.parse().unwrap_or(5);
         self.state = State::BreakSession;
-        self.current_session = Some(Session::new(SessionType::Break, 1));
+        self.current_session = Some(Session::new(SessionType::Break, time));
     }
 
     fn toggle_session(&mut self) {

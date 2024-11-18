@@ -14,6 +14,8 @@ pub enum State {
     ConfirmBreak,
     ConfirmWork,
     ChooseTime,
+    WorkInput,
+    BreakInput,
 }
 
 impl Default for State {
