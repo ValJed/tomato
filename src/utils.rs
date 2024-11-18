@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_render_timer() {
         let start = SystemTime::now();
-        assert_eq!(render_timer(start, 1), Some("1m 0s"));
-        assert_eq!(render_timer(start, 3), Some("3m 0s"));
+        assert_eq!(render_timer(start, 1), Some("1m 0s".to_string()));
+        assert_eq!(render_timer(start, 3), Some("3m 0s".to_string()));
     }
 }
