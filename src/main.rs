@@ -134,6 +134,7 @@ impl App {
         self.current_session = None;
         match self.state {
             State::WorkSession => {
+                utils::notify("Break Time?");
                 self.state = State::ConfirmBreak;
             }
             State::BreakSession => {

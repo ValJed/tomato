@@ -1,3 +1,4 @@
+use notify_rust::Notification;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use std::time::SystemTime;
 
@@ -31,6 +32,19 @@ pub fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect 
         .areas(area);
     let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
     area
+}
+
+pub fn notify(text: &str) {
+    let notif = Notification::new()
+        .summary("Tomato")
+        .body(text)
+        .appname("tomato")
+        .show();
+
+    match notif {
+        Ok(_) => {}
+        Err(_) => {}
+    }
 }
 
 #[cfg(test)]

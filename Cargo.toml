@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.6.3"
+notify-rust = "4.11.3"
 ratatui = "0.28.0"
