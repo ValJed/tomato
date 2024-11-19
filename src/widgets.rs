@@ -15,17 +15,11 @@ use crate::utils::center;
 
 pub struct InputWidget {
     pub input: String,
-    pub session_type: SessionType,
 }
 
 impl Widget for InputWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let widget_title = if let SessionType::Work = self.session_type {
-            " Work Session Time: "
-        } else {
-            " Break Session Time: "
-        };
-        let title = Title::from(widget_title);
+        let title = Title::from(" Set Time: ");
         let block = Block::bordered()
             .title(title.alignment(Alignment::Left))
             .padding(Padding::new(1, 1, 1, 1));
@@ -102,11 +96,19 @@ impl Widget for &mut App {
         } else {
             " Stop "
         };
+        let main_cmd = if let State::WorkInput = self.state {
+            "<Enter>"
+        } else if let State::BreakInput = self.state {
+            "<Enter>"
+        } else {
+            "<Space>"
+        };
         let instructions = Title::from(Line::from(vec![
             toggle_session.into(),
-            "<Space>".blue().bold(),
-            " History ".into(),
-            "<H>".blue().bold(),
+            main_cmd.blue().bold(),
+            // Todo:
+            // " History ".into(),
+            // "<H>".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));

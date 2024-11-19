@@ -92,7 +92,6 @@ impl App {
             }
             State::WorkInput => frame.render_widget(
                 InputWidget {
-                    session_type: SessionType::Work,
                     input: self.input.clone(),
                 },
                 frame.area(),
@@ -100,7 +99,6 @@ impl App {
 
             State::BreakInput => frame.render_widget(
                 InputWidget {
-                    session_type: SessionType::Break,
                     input: self.input.clone(),
                 },
                 frame.area(),
@@ -203,7 +201,11 @@ impl App {
 
     fn toggle_session(&mut self) {
         if self.current_session.is_none() {
-            self.start_work_session();
+            if let State::ConfirmBreak = self.state {
+                self.start_break_session();
+            } else {
+                self.start_work_session();
+            }
             return;
         }
 
@@ -214,6 +216,7 @@ impl App {
                 self.state = State::ConfirmBreak;
             }
             State::BreakSession => {
+                utils::notify("Back to work?");
                 self.state = State::ConfirmWork;
             }
             _ => {}
