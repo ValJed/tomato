@@ -19,7 +19,7 @@ mod tui;
 mod utils;
 mod widgets;
 
-use structs::{Session, SessionType, State};
+use structs::{Session, SessionType, State, UserConfig};
 use widgets::{App, ConfirmWidget, CounterWidget, InputWidget};
 
 const BREAK_DEFAULT: i32 = 5;
@@ -27,6 +27,11 @@ const WORK_DEFAULT: i32 = 25;
 
 impl App {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
+        let user_config: UserConfig =
+            confy::load("tomato", "config").expect("Error when loading the config file");
+        self.default_work_duration = user_config.default_work_duration;
+        self.default_break_duration = user_config.default_break_duration;
+
         while !self.exit {
             terminal.draw(|frame| {
                 self.render_layout(frame);
@@ -132,11 +137,11 @@ impl App {
             },
             KeyCode::Char('t') => match self.state {
                 State::ConfirmBreak => {
-                    self.input = BREAK_DEFAULT.to_string();
+                    self.input = self.default_break_duration.to_string();
                     self.state = State::BreakInput;
                 }
                 State::ConfirmWork => {
-                    self.input = WORK_DEFAULT.to_string();
+                    self.input = self.default_work_duration.to_string();
                     self.state = State::WorkInput
                 }
                 _ => {}
@@ -185,13 +190,13 @@ impl App {
     }
 
     fn start_work_session(&mut self) {
-        let time: i32 = self.input.parse().unwrap_or(25);
+        let time: i32 = self.input.parse().unwrap_or(self.default_work_duration);
         self.state = State::WorkSession;
         self.current_session = Some(Session::new(SessionType::Work, time));
     }
 
     fn start_break_session(&mut self) {
-        let time: i32 = self.input.parse().unwrap_or(5);
+        let time: i32 = self.input.parse().unwrap_or(self.default_break_duration);
         self.state = State::BreakSession;
         self.current_session = Some(Session::new(SessionType::Break, time));
     }

@@ -1,4 +1,21 @@
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UserConfig {
+    pub default_work_duration: i32,
+    pub default_break_duration: i32,
+}
+
+impl ::std::default::Default for UserConfig {
+    fn default() -> Self {
+        Self {
+            default_work_duration: 25,
+            default_break_duration: 5,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub enum SessionType {

@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 color-eyre = "0.6.3"
+confy = "0.6.1"
 notify-rust = "4.11.3"
 ratatui = "0.28.0"
+serde = { version = "1.0.215", features = ["derive"] }

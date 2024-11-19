@@ -89,6 +89,8 @@ pub struct App {
     pub exit: bool,
     pub current_session: Option<Session>,
     pub input: String,
+    pub default_work_duration: i32,
+    pub default_break_duration: i32,
 }
 
 // Render the main application widget
