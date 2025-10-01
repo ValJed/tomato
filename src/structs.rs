@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::default::Default;
 use std::time::SystemTime;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -8,13 +9,24 @@ pub struct UserConfig {
     pub default_break_duration: i32,
 }
 
-impl ::std::default::Default for UserConfig {
+impl Default for UserConfig {
     fn default() -> Self {
         Self {
             default_work_duration: 25,
             default_break_duration: 5,
         }
     }
+}
+
+#[derive(Default)]
+pub struct App {
+    pub state: State,
+    pub exit: bool,
+    pub current_session: Option<Session>,
+    pub input: String,
+    pub projects: Vec<Project>,
+    pub default_work_duration: i32,
+    pub default_break_duration: i32,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -33,6 +45,7 @@ pub enum State {
     ChooseTime,
     WorkInput,
     BreakInput,
+    ProjectsList,
 }
 
 impl Default for State {
@@ -57,4 +70,10 @@ impl Session {
             session_type,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct Project {
+    pub id: usize,
+    pub name: String,
 }

@@ -19,8 +19,8 @@ mod tui;
 mod utils;
 mod widgets;
 
-use structs::{Session, SessionType, State, UserConfig};
-use widgets::{App, ConfirmWidget, CounterWidget, InputWidget};
+use structs::{App, Project, Session, SessionType, State, UserConfig};
+use widgets::{ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget};
 
 const BREAK_DEFAULT: i32 = 5;
 const WORK_DEFAULT: i32 = 25;
@@ -31,6 +31,7 @@ impl App {
             confy::load("tomato", "config").expect("Error when loading the config file");
         self.default_work_duration = user_config.default_work_duration;
         self.default_break_duration = user_config.default_break_duration;
+        self.projects = get_default_projects();
 
         while !self.exit {
             terminal.draw(|frame| {
@@ -96,10 +97,15 @@ impl App {
                 },
                 frame.area(),
             ),
-
             State::BreakInput => frame.render_widget(
                 InputWidget {
                     input: self.input.clone(),
+                },
+                frame.area(),
+            ),
+            State::ProjectsList => frame.render_widget(
+                ProjectsListWidget {
+                    projects: &self.projects,
                 },
                 frame.area(),
             ),
@@ -107,12 +113,12 @@ impl App {
         }
     }
 
-    /// updates the application's state based on user input
+    // updates the application's state based on user input
     fn handle_events(&mut self, event: Event) {
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => match self.state {
-                State::WorkInput => self.handle_input(key_event),
-                State::BreakInput => self.handle_input(key_event),
+                State::WorkInput => self.handle_num_input(key_event),
+                State::BreakInput => self.handle_num_input(key_event),
                 _ => self.handle_key_event(key_event),
             },
             _ => {}
@@ -133,6 +139,14 @@ impl App {
                 State::ConfirmWork => self.start_break_input(),
                 _ => {}
             },
+            // For now we can check projects only when not in a session
+            KeyCode::Char('p') => match self.state {
+                State::BreakSession => {}
+                State::WorkSession => {}
+                _ => {
+                    self.list_projects();
+                }
+            },
             KeyCode::Char('t') => match self.state {
                 State::ConfirmBreak => {
                     self.input = self.default_break_duration.to_string();
@@ -149,7 +163,7 @@ impl App {
         // Ok(())
     }
 
-    fn handle_input(&mut self, key_event: KeyEvent) {
+    fn handle_num_input(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char('0') => self.input = self.input.clone() + "0",
@@ -178,12 +192,17 @@ impl App {
     }
 
     fn start_work_input(&mut self) {
-        self.input = WORK_DEFAULT.to_string();
+        self.input = self.default_work_duration.to_string();
         self.state = State::WorkInput
     }
 
+    fn list_projects(&mut self) {
+        // TODO: refresh projects ?
+        self.state = State::ProjectsList;
+    }
+
     fn start_break_input(&mut self) {
-        self.input = BREAK_DEFAULT.to_string();
+        self.input = self.default_break_duration.to_string();
         self.state = State::BreakInput;
     }
 
@@ -234,4 +253,29 @@ fn main() -> Result<()> {
     App::default().run(&mut terminal)?;
     tui::restore()?;
     Ok(())
+}
+
+fn get_default_projects() -> Vec<Project> {
+    vec![
+        Project {
+            id: 1,
+            name: String::from("I am you first project"),
+        },
+        Project {
+            id: 2,
+            name: String::from("Save the world!"),
+        },
+        Project {
+            id: 3,
+            name: String::from("Find some peace even if this world is getting crazy surely"),
+        },
+        Project {
+            id: 4,
+            name: String::from("Maybe we should all go back to jungle and drop our clothes"),
+        },
+        Project {
+            id: 5,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+    ]
 }
