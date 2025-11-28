@@ -7,7 +7,7 @@ use ratatui::{
     text::{Line, Text},
     widgets::{
         block::{Position, Title},
-        Block, Padding, Paragraph, Widget,
+        Block, ListState, Padding, Paragraph, Widget,
     },
     Frame,
 };
@@ -31,7 +31,7 @@ impl App {
             confy::load("tomato", "config").expect("Error when loading the config file");
         self.default_work_duration = user_config.default_work_duration;
         self.default_break_duration = user_config.default_break_duration;
-        self.projects = get_default_projects();
+        self.projects_list.projects = get_default_projects();
 
         while !self.exit {
             terminal.draw(|frame| {
@@ -105,7 +105,9 @@ impl App {
             ),
             State::ProjectsList => frame.render_widget(
                 ProjectsListWidget {
-                    projects: &self.projects,
+                    projects: &self.projects_list.projects,
+                    selected: self.projects_list.selected,
+                    state: &mut self.projects_list.state,
                 },
                 frame.area(),
             ),
@@ -119,6 +121,7 @@ impl App {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => match self.state {
                 State::WorkInput => self.handle_num_input(key_event),
                 State::BreakInput => self.handle_num_input(key_event),
+                State::ProjectsList => self.handle_list_input(key_event),
                 _ => self.handle_key_event(key_event),
             },
             _ => {}
@@ -163,6 +166,16 @@ impl App {
         // Ok(())
     }
 
+    fn handle_list_input(&mut self, key_event: KeyEvent) {
+        println!("key_event: {:?}", key_event.code);
+        match key_event.code {
+            KeyCode::Char('q') => self.exit(),
+            KeyCode::Down | KeyCode::Char('j') => self.next_project(),
+            KeyCode::Up | KeyCode::Char('k') => self.prev_project(),
+            _ => {}
+        }
+    }
+
     fn handle_num_input(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
@@ -189,6 +202,34 @@ impl App {
 
             _ => {}
         }
+    }
+
+    fn next_project(&mut self) {
+        let i = match self.projects_list.state.selected() {
+            None => 0,
+            Some(index) => {
+                if index >= self.projects_list.projects.len() - 1 {
+                    0
+                } else {
+                    index + 1
+                }
+            }
+        };
+        self.projects_list.state.select(Some(i));
+    }
+
+    fn prev_project(&mut self) {
+        let i = match self.projects_list.state.selected() {
+            None => 0,
+            Some(index) => {
+                if index == 0 {
+                    self.projects_list.projects.len() - 1
+                } else {
+                    index - 1
+                }
+            }
+        };
+        self.projects_list.state.select(Some(i));
     }
 
     fn start_work_input(&mut self) {

@@ -1,3 +1,4 @@
+use ratatui::widgets::ListState;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::time::SystemTime;
@@ -24,9 +25,16 @@ pub struct App {
     pub exit: bool,
     pub current_session: Option<Session>,
     pub input: String,
-    pub projects: Vec<Project>,
+    pub projects_list: ProjectsList,
     pub default_work_duration: i32,
     pub default_break_duration: i32,
+}
+
+#[derive(Default)]
+pub struct ProjectsList {
+    pub projects: Vec<Project>,
+    pub selected: Option<usize>,
+    pub state: ListState,
 }
 
 #[derive(Copy, Clone, Debug)]
