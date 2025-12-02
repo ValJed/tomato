@@ -22,9 +22,6 @@ mod widgets;
 use structs::{App, Project, Session, SessionType, State, UserConfig};
 use widgets::{ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget};
 
-const BREAK_DEFAULT: i32 = 5;
-const WORK_DEFAULT: i32 = 25;
-
 impl App {
     pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         let user_config: UserConfig =
@@ -106,7 +103,7 @@ impl App {
             State::ProjectsList => frame.render_widget(
                 ProjectsListWidget {
                     projects: &self.projects_list.projects,
-                    selected: self.projects_list.selected,
+                    selected_id: self.projects_list.selected_id,
                     state: &mut self.projects_list.state,
                 },
                 frame.area(),
@@ -167,11 +164,36 @@ impl App {
     }
 
     fn handle_list_input(&mut self, key_event: KeyEvent) {
-        println!("key_event: {:?}", key_event.code);
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Down | KeyCode::Char('j') => self.next_project(),
             KeyCode::Up | KeyCode::Char('k') => self.prev_project(),
+            KeyCode::Char('p') => {
+                self.state = State::None;
+            }
+            KeyCode::Char(' ') => {
+                let selected_index = self.projects_list.state.selected();
+                match selected_index {
+                    Some(index) => match self.projects_list.projects.get(index) {
+                        Some(project) => match self.projects_list.selected_id {
+                            None => {
+                                self.projects_list.selected_id = Some(project.id);
+                            }
+                            Some(id) => {
+                                let new_selected_id = if id == project.id {
+                                    None
+                                } else {
+                                    Some(project.id)
+                                };
+
+                                self.projects_list.selected_id = new_selected_id
+                            }
+                        },
+                        None => {}
+                    },
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }
@@ -239,6 +261,7 @@ impl App {
 
     fn list_projects(&mut self) {
         // TODO: refresh projects ?
+        self.projects_list.state.select(Some(0));
         self.state = State::ProjectsList;
     }
 

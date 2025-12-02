@@ -18,7 +18,6 @@ pub struct InputWidget {
 }
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
-const UNSELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
 impl Widget for InputWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
@@ -42,7 +41,7 @@ pub struct CounterWidget {
 
 pub struct ProjectsListWidget<'a> {
     pub projects: &'a [Project],
-    pub selected: Option<usize>,
+    pub selected_id: Option<usize>,
     pub state: &'a mut ListState,
 }
 
@@ -75,13 +74,6 @@ impl Widget for ProjectsListWidget<'_> {
             .title(title.alignment(Alignment::Center))
             .padding(Padding::new(1, 1, 1, 1));
 
-        // let selected = match self.selected {
-        //     Some(id) => Some(id),
-        //     None => match self.projects {
-        //         [] => None,
-        //         projects => Some(projects[0].id),
-        //     },
-        // };
         let highlighted_index = match self.state.selected() {
             Some(index) => index,
             None => 0,
@@ -92,10 +84,14 @@ impl Widget for ProjectsListWidget<'_> {
             .iter()
             .enumerate()
             .map(|(i, project)| {
-                // let is_selected = project.id == selected.unwrap();
-                let is_current = highlighted_index == i;
-                let content = project.name.clone();
+                let is_selected = match self.selected_id {
+                    None => false,
+                    Some(id) => id == project.id,
+                };
 
+                let is_current = highlighted_index == i;
+                let pre_content = if is_selected { "> " } else { "" };
+                let content = pre_content.to_string() + &project.name.clone();
                 if is_current {
                     return ListItem::from(content).style(SELECTED_STYLE);
                 }

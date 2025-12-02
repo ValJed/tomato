@@ -33,7 +33,7 @@ pub struct App {
 #[derive(Default)]
 pub struct ProjectsList {
     pub projects: Vec<Project>,
-    pub selected: Option<usize>,
+    pub selected_id: Option<usize>,
     pub state: ListState,
 }
 
@@ -43,7 +43,7 @@ pub enum SessionType {
     Break,
 }
 
-// #[derive(Default)]
+#[derive(Debug)]
 pub enum State {
     None,
     WorkSession,
