@@ -47,6 +47,16 @@ pub fn notify(text: &str) {
     }
 }
 
+pub fn truncate(text: String, size: usize) -> String {
+    if text.len() <= size {
+        return text;
+    }
+    let mut cloned = text.clone();
+    cloned.truncate(size);
+    let formatted = cloned + "...";
+    formatted
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

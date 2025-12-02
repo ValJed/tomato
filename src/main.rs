@@ -226,6 +226,18 @@ impl App {
         }
     }
 
+    // Global methods
+    fn get_selected_project(&mut self) -> Option<&Project> {
+        match self.projects_list.selected_id {
+            None => None,
+            Some(id) => self
+                .projects_list
+                .projects
+                .iter()
+                .find(|project| project.id == id),
+        }
+    }
+
     fn next_project(&mut self) {
         let i = match self.projects_list.state.selected() {
             None => 0,

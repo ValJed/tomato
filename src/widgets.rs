@@ -11,7 +11,7 @@ use ratatui::{
 };
 
 use crate::structs::{App, Project, ProjectsList, SessionType, State};
-use crate::utils::center;
+use crate::utils::{center, truncate};
 
 pub struct InputWidget {
     pub input: String,
@@ -128,7 +128,7 @@ impl Widget for ConfirmWidget {
 // Render the main application widget
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Tomato ".bold());
+        let title = Title::from(" 🍅 Tomato ".bold());
         let toggle_session = if self.current_session.is_none() {
             " Start "
         } else {
@@ -151,8 +151,17 @@ impl Widget for &mut App {
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));
+        let selected_project = self.get_selected_project();
+        let selected_project_name = match selected_project {
+            None => String::from("None"),
+            Some(project) => project.name.clone(),
+        };
+        let project_title = Title::from(format!(" 📁 {} ", truncate(selected_project_name, 25)))
+            .alignment(Alignment::Right)
+            .position(Position::Top);
         Block::bordered()
-            .title(title.alignment(Alignment::Center))
+            .title(title.alignment(Alignment::Left))
+            .title(project_title)
             .title(
                 instructions
                     .alignment(Alignment::Center)
