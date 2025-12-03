@@ -70,8 +70,21 @@ impl Widget for ProjectsListWidget<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let session_type = " Projects ";
         let title = Title::from(session_type.bold());
+        let instructions = Title::from(Line::from(vec![
+            " Create ".into(),
+            "<C>".blue().bold(),
+            " Delete ".into(),
+            "<D>".blue().bold(),
+            " Update ".into(),
+            "<U> ".blue().bold(),
+        ]));
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center))
+            .title(
+                instructions
+                    .alignment(Alignment::Center)
+                    .position(Position::Bottom),
+            )
             .padding(Padding::new(1, 1, 1, 1));
 
         let highlighted_index = match self.state.selected() {
@@ -134,20 +147,17 @@ impl Widget for &mut App {
         } else {
             " Stop "
         };
-        let main_cmd = if let State::WorkInput = self.state {
-            "<Enter>"
-        } else if let State::BreakInput = self.state {
-            "<Enter>"
-        } else {
-            "<Space>"
+
+        let main_cmd = match self.state {
+            State::WorkInput | State::BreakInput => "<Enter>",
+            _ => "<Space>",
         };
         let projects = " Projects ";
         let instructions = Title::from(Line::from(vec![
             toggle_session.into(),
             main_cmd.blue().bold(),
-            // Todo:
             projects.into(),
-            "<P> ".blue().bold(),
+            "<P>".blue().bold(),
             " Quit ".into(),
             "<Q> ".blue().bold(),
         ]));
