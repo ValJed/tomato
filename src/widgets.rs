@@ -115,7 +115,7 @@ impl Widget for ProjectsListWidget<'_> {
             .collect();
 
         let list = List::new(projects).block(block);
-        let list_area = center(area, Constraint::Length(100), Constraint::Length(20));
+        let list_area = center(area, Constraint::Length(100), Constraint::Length(10));
         Widget::render(list, list_area, buf);
     }
 }

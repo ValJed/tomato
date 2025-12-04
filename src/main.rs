@@ -98,6 +98,14 @@ impl App {
                     frame.area(),
                 );
             }
+            State::ConfirmDelete => {
+                frame.render_widget(
+                    ConfirmWidget {
+                        question: String::from(" Delete Project ? "),
+                    },
+                    frame.area(),
+                );
+            }
             State::WorkInput => frame.render_widget(
                 InputWidget {
                     title: String::from(" Set Time: "),
@@ -127,19 +135,13 @@ impl App {
                 },
                 frame.area(),
             ),
-            State::ProjectsInputUpdate => {
-                let input = match self.get_highlighted_project() {
-                    Some(project) => project.name.clone(),
-                    None => String::new(),
-                };
-                frame.render_widget(
-                    InputWidget {
-                        title: String::from(" Update Project "),
-                        input,
-                    },
-                    frame.area(),
-                )
-            }
+            State::ProjectsInputUpdate => frame.render_widget(
+                InputWidget {
+                    title: String::from(" Update Project "),
+                    input: self.input.clone(),
+                },
+                frame.area(),
+            ),
             _ => {}
         }
     }
@@ -148,9 +150,11 @@ impl App {
     fn handle_events(&mut self, event: Event) {
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => match self.state {
-                State::WorkInput => self.handle_num_input(key_event),
-                State::BreakInput => self.handle_num_input(key_event),
+                State::WorkInput | State::BreakInput => self.handle_num_input(key_event),
                 State::ProjectsList => self.handle_list_input(key_event),
+                State::ProjectsInputAdd | State::ProjectsInputUpdate => {
+                    self.handle_project_input(key_event)
+                }
                 _ => self.handle_key_event(key_event),
             },
             _ => {}
@@ -164,11 +168,16 @@ impl App {
             KeyCode::Char('y') => match self.state {
                 State::ConfirmBreak => self.start_break_input(),
                 State::ConfirmWork => self.start_work_input(),
+                State::ConfirmDelete => {
+                    self.delete_project();
+                    self.state = State::ProjectsList;
+                }
                 _ => {}
             },
             KeyCode::Char('n') => match self.state {
                 State::ConfirmBreak => self.start_work_input(),
                 State::ConfirmWork => self.start_break_input(),
+                State::ConfirmDelete => self.state = State::ProjectsList,
                 _ => {}
             },
             // For now we can check projects only when not in a session
@@ -206,8 +215,14 @@ impl App {
             KeyCode::Char('a') => {
                 self.state = State::ProjectsInputAdd;
             }
-            KeyCode::Char('d') => {}
+            KeyCode::Char('d') => {
+                self.state = State::ConfirmDelete;
+            }
             KeyCode::Char('u') => {
+                self.input = match self.get_highlighted_project() {
+                    Some(project) => project.name.clone(),
+                    None => String::new(),
+                };
                 self.state = State::ProjectsInputUpdate;
             }
             KeyCode::Char(' ') => {
@@ -237,6 +252,33 @@ impl App {
         }
     }
 
+    fn handle_project_input(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Char(char) => self.input = self.input.clone() + &char.to_string(),
+            KeyCode::Backspace => {
+                let mut chars = self.input.chars();
+                chars.next_back();
+                self.input = chars.as_str().into();
+            }
+            KeyCode::Enter => match self.state {
+                State::ProjectsInputAdd => {
+                    self.add_project();
+                    self.input = String::new();
+                    self.state = State::ProjectsList;
+                    // Create project
+                }
+                State::ProjectsInputUpdate => {
+                    self.update_project();
+                    self.input = String::new();
+                    self.state = State::ProjectsList;
+                    // update project
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+
     fn handle_num_input(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
@@ -262,6 +304,20 @@ impl App {
             },
 
             _ => {}
+        }
+    }
+
+    fn add_project(&mut self) {}
+
+    fn update_project(&mut self) {}
+
+    fn delete_project(&mut self) {
+        match self.get_highlighted_project() {
+            Some(_project) => {
+                println!("_project: {:?}", _project);
+                // Remove project
+            }
+            None => {}
         }
     }
 
@@ -398,6 +454,26 @@ fn get_default_projects() -> Vec<Project> {
         },
         Project {
             id: 5,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+        Project {
+            id: 6,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+        Project {
+            id: 7,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+        Project {
+            id: 8,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+        Project {
+            id: 9,
+            name: String::from("Or just play games, smoke pot and fuck it all :D"),
+        },
+        Project {
+            id: 10,
             name: String::from("Or just play games, smoke pot and fuck it all :D"),
         },
     ]

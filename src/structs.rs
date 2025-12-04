@@ -54,6 +54,7 @@ pub enum State {
     BreakSession,
     ConfirmBreak,
     ConfirmWork,
+    ConfirmDelete,
     ChooseTime,
     WorkInput,
     BreakInput,
