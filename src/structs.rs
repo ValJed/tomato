@@ -1,4 +1,5 @@
 use ratatui::widgets::ListState;
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::time::SystemTime;
@@ -8,6 +9,7 @@ use std::time::SystemTime;
 pub struct UserConfig {
     pub default_work_duration: i32,
     pub default_break_duration: i32,
+    pub db_location: String,
 }
 
 impl Default for UserConfig {
@@ -15,6 +17,7 @@ impl Default for UserConfig {
         Self {
             default_work_duration: 25,
             default_break_duration: 5,
+            db_location: String::from("~/.local/share/tomato/tomato.sqlite"),
         }
     }
 }
@@ -28,6 +31,7 @@ pub struct App {
     pub projects_list: ProjectsList,
     pub default_work_duration: i32,
     pub default_break_duration: i32,
+    pub db: Option<Connection>,
 }
 
 #[derive(Default)]
@@ -54,6 +58,8 @@ pub enum State {
     WorkInput,
     BreakInput,
     ProjectsList,
+    ProjectsInputAdd,
+    ProjectsInputUpdate,
 }
 
 impl Default for State {
@@ -80,6 +86,7 @@ impl Session {
     }
 }
 
+// TODO: missing data (see sqlite)
 #[derive(Debug)]
 pub struct Project {
     pub id: usize,

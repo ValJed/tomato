@@ -13,6 +13,7 @@ use ratatui::{
 };
 use std::time::{Duration, SystemTime};
 
+mod db;
 mod errors;
 mod structs;
 mod tui;
@@ -29,6 +30,15 @@ impl App {
         self.default_work_duration = user_config.default_work_duration;
         self.default_break_duration = user_config.default_break_duration;
         self.projects_list.projects = get_default_projects();
+
+        match db::connect_db(&user_config) {
+            Ok(db) => {
+                self.db = Some(db);
+            }
+            Err(err) => {
+                println!("err: {:?}", err);
+            }
+        }
 
         while !self.exit {
             terminal.draw(|frame| {
@@ -90,12 +100,14 @@ impl App {
             }
             State::WorkInput => frame.render_widget(
                 InputWidget {
+                    title: String::from(" Set Time: "),
                     input: self.input.clone(),
                 },
                 frame.area(),
             ),
             State::BreakInput => frame.render_widget(
                 InputWidget {
+                    title: String::from(" Set Time: "),
                     input: self.input.clone(),
                 },
                 frame.area(),
@@ -108,6 +120,26 @@ impl App {
                 },
                 frame.area(),
             ),
+            State::ProjectsInputAdd => frame.render_widget(
+                InputWidget {
+                    title: String::from(" Add Project "),
+                    input: self.input.clone(),
+                },
+                frame.area(),
+            ),
+            State::ProjectsInputUpdate => {
+                let input = match self.get_highlighted_project() {
+                    Some(project) => project.name.clone(),
+                    None => String::new(),
+                };
+                frame.render_widget(
+                    InputWidget {
+                        title: String::from(" Update Project "),
+                        input,
+                    },
+                    frame.area(),
+                )
+            }
             _ => {}
         }
     }
@@ -171,6 +203,13 @@ impl App {
             KeyCode::Char('p') => {
                 self.state = State::None;
             }
+            KeyCode::Char('a') => {
+                self.state = State::ProjectsInputAdd;
+            }
+            KeyCode::Char('d') => {}
+            KeyCode::Char('u') => {
+                self.state = State::ProjectsInputUpdate;
+            }
             KeyCode::Char(' ') => {
                 let selected_index = self.projects_list.state.selected();
                 match selected_index {
@@ -224,6 +263,14 @@ impl App {
 
             _ => {}
         }
+    }
+
+    fn get_highlighted_project(&mut self) -> Option<&Project> {
+        let highlighted_index = match self.projects_list.state.selected() {
+            Some(index) => index,
+            None => 0,
+        };
+        self.projects_list.projects.get(highlighted_index)
     }
 
     // Global methods

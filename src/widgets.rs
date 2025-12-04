@@ -14,6 +14,7 @@ use crate::structs::{App, Project, ProjectsList, SessionType, State};
 use crate::utils::{center, truncate};
 
 pub struct InputWidget {
+    pub title: String,
     pub input: String,
 }
 
@@ -21,7 +22,7 @@ const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
 impl Widget for InputWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Title::from(" Set Time: ");
+        let title = Title::from(self.title);
         let block = Block::bordered()
             .title(title.alignment(Alignment::Left))
             .padding(Padding::new(1, 1, 1, 1));
@@ -71,8 +72,8 @@ impl Widget for ProjectsListWidget<'_> {
         let session_type = " Projects ";
         let title = Title::from(session_type.bold());
         let instructions = Title::from(Line::from(vec![
-            " Create ".into(),
-            "<C>".blue().bold(),
+            " Add ".into(),
+            "<A>".blue().bold(),
             " Delete ".into(),
             "<D>".blue().bold(),
             " Update ".into(),
