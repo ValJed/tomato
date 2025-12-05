@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 color-eyre = "0.6.3"
 confy = "0.6.1"
+dirs = "6.0.0"
 notify-rust = "4.11.3"
 ratatui = "0.28.0"
 rusqlite = { version = "0.37.0", features = ["bundled"] }

@@ -1,3 +1,4 @@
+use dirs::data_dir;
 use ratatui::widgets::ListState;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
@@ -14,10 +15,17 @@ pub struct UserConfig {
 
 impl Default for UserConfig {
     fn default() -> Self {
+        let mut db_path = data_dir().expect("Could not find local data directory");
+        db_path.push("tomato/tomato.sqlite");
+        let db_location = match db_path.into_os_string().into_string() {
+            Ok(path) => path,
+            Err(_) => String::new(),
+        };
+
         Self {
             default_work_duration: 25,
             default_break_duration: 5,
-            db_location: String::from("~/.local/share/tomato/tomato.sqlite"),
+            db_location,
         }
     }
 }
