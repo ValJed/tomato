@@ -13,33 +13,48 @@ use ratatui::{
 };
 use std::time::{Duration, SystemTime};
 
-mod db;
 mod errors;
+mod repository;
 mod structs;
 mod tui;
 mod utils;
 mod widgets;
 
-use structs::{App, Project, Session, SessionType, State, UserConfig};
+use repository::ProjectRepository;
+use structs::{App, Project, ProjectsList, Session, SessionType, State, UserConfig};
 use widgets::{ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget};
 
 impl App {
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
-        let user_config: UserConfig =
-            confy::load("tomato", "config").expect("Error when loading the config file");
-        self.default_work_duration = user_config.default_work_duration;
-        self.default_break_duration = user_config.default_break_duration;
-        self.projects_list.projects = get_default_projects();
-
-        match db::connect_db(&user_config) {
-            Ok(db) => {
-                self.db = Some(db);
-            }
+    pub fn new(user_config: &UserConfig) -> App {
+        let repo = ProjectRepository::new(&user_config).expect("DB instantiation failed");
+        let projects = match repo.get_all() {
+            Ok(projs) => projs,
             Err(err) => {
                 println!("err: {:?}", err);
+                vec![]
             }
+        };
+        let selected_id = match projects.iter().find(|proj| proj.selected == true) {
+            Some(proj) => Some(proj.id),
+            None => None,
+        };
+        App {
+            state: State::None,
+            exit: false,
+            current_session: None,
+            input: String::new(),
+            projects_list: ProjectsList {
+                projects,
+                selected_id,
+                state: ListState::default(),
+            },
+            repo,
+            default_work_duration: user_config.default_work_duration,
+            default_break_duration: user_config.default_break_duration,
         }
+    }
 
+    pub fn run(&mut self, terminal: &mut tui::Tui) -> Result<()> {
         while !self.exit {
             terminal.draw(|frame| {
                 self.render_layout(frame);
@@ -307,7 +322,23 @@ impl App {
         }
     }
 
-    fn add_project(&mut self) {}
+    fn add_project(&mut self) {
+        match self.repo.add(self.input.clone()) {
+            Ok(_) => self.get_projects(),
+            Err(err) => {
+                println!(": {:?}", err);
+            }
+        };
+    }
+
+    fn get_projects(&mut self) {
+        match self.repo.get_all() {
+            Ok(projects) => self.projects_list.projects = projects,
+            Err(err) => {
+                println!("err: {:?}", err);
+            }
+        }
+    }
 
     fn update_project(&mut self) {}
 
@@ -429,52 +460,9 @@ impl App {
 fn main() -> Result<()> {
     errors::install_hooks()?;
     let mut terminal = tui::init()?;
-    App::default().run(&mut terminal)?;
+    let user_config: UserConfig =
+        confy::load("tomato", "config").expect("Error when loading the config file");
+    App::new(&user_config).run(&mut terminal)?;
     tui::restore()?;
     Ok(())
-}
-
-fn get_default_projects() -> Vec<Project> {
-    vec![
-        Project {
-            id: 1,
-            name: String::from("I am you first project"),
-        },
-        Project {
-            id: 2,
-            name: String::from("Save the world!"),
-        },
-        Project {
-            id: 3,
-            name: String::from("Find some peace even if this world is getting crazy surely"),
-        },
-        Project {
-            id: 4,
-            name: String::from("Maybe we should all go back to jungle and drop our clothes"),
-        },
-        Project {
-            id: 5,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-        Project {
-            id: 6,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-        Project {
-            id: 7,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-        Project {
-            id: 8,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-        Project {
-            id: 9,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-        Project {
-            id: 10,
-            name: String::from("Or just play games, smoke pot and fuck it all :D"),
-        },
-    ]
 }
