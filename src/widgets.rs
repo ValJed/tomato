@@ -6,7 +6,7 @@ use ratatui::{
     text::Line,
     widgets::{
         block::{Position, Title},
-        Block, List, ListItem, ListState, Padding, Paragraph, Widget,
+        Block, List, ListItem, ListState, Padding, Paragraph, StatefulWidget, Widget,
     },
 };
 
@@ -116,7 +116,7 @@ impl Widget for ProjectsListWidget<'_> {
 
         let list = List::new(projects).block(block);
         let list_area = center(area, Constraint::Length(100), Constraint::Length(10));
-        Widget::render(list, list_area, buf);
+        StatefulWidget::render(list, list_area, buf, self.state);
     }
 }
 
