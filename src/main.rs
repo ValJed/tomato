@@ -244,20 +244,9 @@ impl App {
                 let selected_index = self.projects_list.state.selected();
                 match selected_index {
                     Some(index) => match self.projects_list.projects.get(index) {
-                        Some(project) => match self.projects_list.selected_id {
-                            None => {
-                                self.projects_list.selected_id = Some(project.id);
-                            }
-                            Some(id) => {
-                                let new_selected_id = if id == project.id {
-                                    None
-                                } else {
-                                    Some(project.id)
-                                };
-
-                                self.projects_list.selected_id = new_selected_id
-                            }
-                        },
+                        Some(project) => {
+                            self.set_selected_project(project.id);
+                        }
                         None => {}
                     },
                     _ => {}
@@ -283,7 +272,7 @@ impl App {
                     // Create project
                 }
                 State::ProjectsInputUpdate => {
-                    self.update_project();
+                    // self.update_project();
                     self.input = String::new();
                     self.state = State::ProjectsList;
                     // update project
@@ -340,7 +329,25 @@ impl App {
         }
     }
 
-    fn update_project(&mut self) {}
+    fn set_selected_project(&mut self, project_id: usize) {
+        match self.projects_list.selected_id {
+            None => {
+                self.repo.set_selected(project_id, true);
+                self.projects_list.selected_id = Some(project_id);
+            }
+            Some(id) => {
+                let should_select = id != project_id;
+                self.repo.set_selected(project_id, should_select);
+                let new_selected_id = if should_select {
+                    Some(project_id)
+                } else {
+                    None
+                };
+
+                self.projects_list.selected_id = new_selected_id
+            }
+        }
+    }
 
     fn delete_project(&mut self) {
         match self.get_highlighted_project() {

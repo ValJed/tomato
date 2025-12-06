@@ -79,10 +79,17 @@ impl ProjectRepository {
         Ok(())
     }
 
-    pub fn set_selected(&self, id: i32, selected: bool) -> Result<(), rusqlite::Error> {
+    pub fn set_selected(&self, id: usize, selected: bool) -> Result<(), rusqlite::Error> {
+        if selected == true {
+            self.connection.execute(
+                "UPDATE project SET selected = 0, modification_date = CURRENT_TIMESTAMP WHERE selected = 1",
+                []
+            )?;
+        }
+        let selected_num = if selected == true { "1" } else { "0" };
         self.connection.execute(
             "UPDATE project SET selected = ?1, modification_date = CURRENT_TIMESTAMP WHERE id = ?2",
-            [&selected.to_string(), &id.to_string()],
+            [selected_num, &id.to_string()],
         )?;
         Ok(())
     }
