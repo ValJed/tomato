@@ -372,10 +372,12 @@ impl App {
 
     fn delete_project(&mut self) {
         match self.get_highlighted_project() {
-            Some(_project) => {
-                println!("_project: {:?}", _project);
-                // Remove project
-            }
+            Some(project) => match self.repo.delete(project.id.clone()) {
+                Ok(()) => {
+                    self.get_projects();
+                }
+                Err(_) => {}
+            },
             None => {}
         }
     }

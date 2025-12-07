@@ -73,7 +73,7 @@ impl ProjectRepository {
         Ok(())
     }
 
-    pub fn delete(&self, id: i32) -> Result<(), rusqlite::Error> {
+    pub fn delete(&self, id: usize) -> Result<(), rusqlite::Error> {
         self.connection
             .execute("DELETE FROM project WHERE id = ?1", [&id.to_string()])?;
         Ok(())
