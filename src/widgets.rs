@@ -16,6 +16,7 @@ use crate::utils::{center, truncate};
 pub struct InputWidget {
     pub title: String,
     pub input: String,
+    pub width: u16,
 }
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
@@ -26,7 +27,7 @@ impl Widget for InputWidget {
         let block = Block::bordered()
             .title(title.alignment(Alignment::Left))
             .padding(Padding::new(1, 1, 1, 1));
-        let counter_area = center(area, Constraint::Length(25), Constraint::Length(5));
+        let counter_area = center(area, Constraint::Length(self.width), Constraint::Length(5));
 
         Paragraph::new(self.input)
             .centered()

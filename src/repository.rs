@@ -65,10 +65,10 @@ impl ProjectRepository {
         Ok(())
     }
 
-    pub fn update(&self, id: i32, name: String) -> Result<(), rusqlite::Error> {
+    pub fn update(&self, id: usize, name: String) -> Result<(), rusqlite::Error> {
         self.connection.execute(
             "UPDATE project SET name = ?1, modification_date = CURRENT_TIMESTAMP WHERE id = ?2",
-            [&name, &id.to_string()],
+            [name, id.to_string()],
         )?;
         Ok(())
     }

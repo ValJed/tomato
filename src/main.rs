@@ -125,6 +125,7 @@ impl App {
                 InputWidget {
                     title: String::from(" Set Time: "),
                     input: self.input.clone(),
+                    width: 25,
                 },
                 frame.area(),
             ),
@@ -132,6 +133,7 @@ impl App {
                 InputWidget {
                     title: String::from(" Set Time: "),
                     input: self.input.clone(),
+                    width: 25,
                 },
                 frame.area(),
             ),
@@ -147,6 +149,7 @@ impl App {
                 InputWidget {
                     title: String::from(" Add Project "),
                     input: self.input.clone(),
+                    width: 50,
                 },
                 frame.area(),
             ),
@@ -154,6 +157,7 @@ impl App {
                 InputWidget {
                     title: String::from(" Update Project "),
                     input: self.input.clone(),
+                    width: 50,
                 },
                 frame.area(),
             ),
@@ -272,10 +276,9 @@ impl App {
                     // Create project
                 }
                 State::ProjectsInputUpdate => {
-                    // self.update_project();
+                    self.update_project();
                     self.input = String::new();
                     self.state = State::ProjectsList;
-                    // update project
                 }
                 _ => {}
             },
@@ -320,6 +323,18 @@ impl App {
         };
     }
 
+    fn update_project(&mut self) {
+        match self.get_highlighted_project() {
+            Some(project) => {
+                match self.repo.update(project.id, self.input.clone()) {
+                    Ok(_) => self.get_projects(),
+                    Err(_) => {}
+                };
+            }
+            None => {}
+        }
+    }
+
     fn get_projects(&mut self) {
         match self.repo.get_all() {
             Ok(projects) => self.projects_list.projects = projects,
@@ -331,20 +346,26 @@ impl App {
 
     fn set_selected_project(&mut self, project_id: usize) {
         match self.projects_list.selected_id {
-            None => {
-                self.repo.set_selected(project_id, true);
-                self.projects_list.selected_id = Some(project_id);
-            }
+            None => match self.repo.set_selected(project_id, true) {
+                Ok(()) => {
+                    self.projects_list.selected_id = Some(project_id);
+                }
+                Err(_) => {}
+            },
             Some(id) => {
                 let should_select = id != project_id;
-                self.repo.set_selected(project_id, should_select);
-                let new_selected_id = if should_select {
-                    Some(project_id)
-                } else {
-                    None
-                };
+                match self.repo.set_selected(project_id, should_select) {
+                    Ok(()) => {
+                        let new_selected_id = if should_select {
+                            Some(project_id)
+                        } else {
+                            None
+                        };
 
-                self.projects_list.selected_id = new_selected_id
+                        self.projects_list.selected_id = new_selected_id
+                    }
+                    Err(_) => {}
+                }
             }
         }
     }
@@ -359,7 +380,7 @@ impl App {
         }
     }
 
-    fn get_highlighted_project(&mut self) -> Option<&Project> {
+    fn get_highlighted_project(&self) -> Option<&Project> {
         let highlighted_index = match self.projects_list.state.selected() {
             Some(index) => index,
             None => 0,
