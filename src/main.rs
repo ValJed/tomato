@@ -76,9 +76,9 @@ impl App {
     match &self.state {
       State::WorkSession => {
         let session = self.current_session.as_ref().unwrap();
-        let time = utils::render_timer(session.start, session.duration);
+        let time = utils::render_timer_str(session.start, session.duration);
         if time.is_none() {
-          self.stop_work_session();
+          self.toggle_session();
           return;
         }
         let counter_widget = CounterWidget {
@@ -89,7 +89,7 @@ impl App {
       }
       State::BreakSession => {
         let session = self.current_session.as_ref().unwrap();
-        let time = utils::render_timer(session.start, session.duration);
+        let time = utils::render_timer_str(session.start, session.duration);
         if time.is_none() {
           self.toggle_session();
           return;
@@ -309,21 +309,20 @@ impl App {
   fn add_project(&mut self) {
     match self.repo.add(self.input.clone()) {
       Ok(_) => self.get_projects(),
-      Err(err) => {
-        println!(": {:?}", err);
+      Err(_err) => {
+        utils::notify("Error when creating a project");
       }
     };
   }
 
   fn update_project(&mut self) {
-    match self.get_highlighted_project() {
-      Some(project) => {
-        match self.repo.update(project.id, self.input.clone()) {
-          Ok(_) => self.get_projects(),
-          Err(_) => {}
-        };
-      }
-      None => {}
+    if let Some(project) = self.get_highlighted_project() {
+      match self.repo.update(project.id, self.input.clone()) {
+        Ok(_) => self.get_projects(),
+        Err(_) => {
+          utils::notify("Error when updating a project");
+        }
+      };
     }
   }
 
@@ -438,18 +437,29 @@ impl App {
   }
 
   fn start_work_session(&mut self) {
-    let time: i32 = self.input.parse().unwrap_or(self.default_work_duration);
+    let time: u32 = self.input.parse().unwrap_or(self.default_work_duration);
     self.state = State::WorkSession;
     self.current_session = Some(Session::new(SessionType::Work, time));
   }
 
   fn start_break_session(&mut self) {
-    let time: i32 = self.input.parse().unwrap_or(self.default_break_duration);
+    let time: u32 = self.input.parse().unwrap_or(self.default_break_duration);
     self.state = State::BreakSession;
     self.current_session = Some(Session::new(SessionType::Break, time));
   }
 
-  fn stop_work_session(&mut self) {}
+  fn stop_work_session(&mut self) {
+    let session = self.current_session.as_ref().unwrap();
+    let time = utils::render_timer(session.start, session.duration)
+      .unwrap_or(self.default_work_duration);
+    if let Some(project_id) = self.get_selected_project().map(|p| p.id.clone())
+    {
+      let updated = self.repo.update_project_time(project_id.clone(), time);
+      if updated.is_err() {
+        utils::notify("Error when updating project spent time");
+      }
+    }
+  }
 
   fn toggle_session(&mut self) {
     if self.current_session.is_none() {
@@ -461,9 +471,9 @@ impl App {
       return;
     }
 
-    self.current_session = None;
     match self.state {
       State::WorkSession => {
+        self.stop_work_session();
         utils::notify("Break Time?");
         self.state = State::ConfirmBreak;
       }
@@ -473,6 +483,7 @@ impl App {
       }
       _ => {}
     }
+    self.current_session = None;
   }
 
   fn exit(&mut self) {

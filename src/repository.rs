@@ -70,7 +70,7 @@ impl ProjectRepository {
   pub fn update(&self, id: usize, name: String) -> Result<(), rusqlite::Error> {
     self.connection.execute(
             "UPDATE project SET name = ?1, modification_date = CURRENT_TIMESTAMP WHERE id = ?2",
-            [name, id.to_string()],
+            (name, id),
         )?;
     Ok(())
   }
@@ -88,10 +88,10 @@ impl ProjectRepository {
     time: u32,
   ) -> Result<(), rusqlite::Error> {
     self.connection.execute(
-      "UPDATE project SET time_spent = ?1, 
+      "UPDATE project SET time_spent = time_spent + ?1, 
         modification_date = CURRENT_TIMESTAMP 
         WHERE id = ?2",
-      [time, id.to_string()],
+      (time, id),
     )?;
     Ok(())
   }

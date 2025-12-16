@@ -2,28 +2,31 @@ use notify_rust::Notification;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use std::time::SystemTime;
 
-pub fn render_timer(start: SystemTime, duration: i32) -> Option<String> {
-  let duration_secs: f32 = duration as f32 * 60.0;
-  let time = SystemTime::now().duration_since(start).unwrap().as_secs() as f32;
+pub fn render_timer(start: SystemTime, duration: u32) -> Option<u32> {
+  let duration_secs = duration * 60;
+  let time = SystemTime::now().duration_since(start).unwrap().as_secs() as u32;
   let countdown_secs = duration_secs - time;
 
-  if countdown_secs < 1.0 {
+  if countdown_secs < 1 {
     return None;
   }
 
-  Some(to_time_str(countdown_secs))
+  Some(countdown_secs)
 }
 
-pub fn to_time_str(seconds: f32) -> String {
-  if seconds < 60.0 {
-    return format!("{}s", seconds as i32).to_string();
+pub fn render_timer_str(start: SystemTime, duration: u32) -> Option<String> {
+  let seconds_res = render_timer(start, duration);
+  if seconds_res.is_none() {
+    return None;
+  }
+  let seconds = seconds_res.unwrap();
+  if seconds < 60 {
+    return Some(format!("{}s", seconds as i32).to_string());
   }
 
-  let minutes = seconds / 60.0;
-  let minutes_whole = minutes.floor() as i32; // Get the whole number part of minutes
-  let remaining_seconds = (minutes.fract() * 60.0).round() as i32; // Calculate remaining seconds
-
-  return format!("{}m {}s", minutes_whole, remaining_seconds);
+  let minutes = seconds / 60;
+  let remaining_seconds = minutes * 60;
+  return Some(format!("{}m {}s", minutes, remaining_seconds));
 }
 
 pub fn center(
@@ -76,7 +79,7 @@ mod tests {
   #[test]
   fn test_render_timer() {
     let start = SystemTime::now();
-    assert_eq!(render_timer(start, 1), Some("1m 0s".to_string()));
-    assert_eq!(render_timer(start, 3), Some("3m 0s".to_string()));
+    assert_eq!(render_timer_str(start, 1), Some("1m 0s".to_string()));
+    assert_eq!(render_timer_str(start, 3), Some("3m 0s".to_string()));
   }
 }

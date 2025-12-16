@@ -9,8 +9,8 @@ use crate::repository::ProjectRepository;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserConfig {
-  pub default_work_duration: i32,
-  pub default_break_duration: i32,
+  pub default_work_duration: u32,
+  pub default_break_duration: u32,
   pub db_location: String,
 }
 
@@ -38,8 +38,8 @@ pub struct App {
   pub input: String,
   pub projects_list: ProjectsList,
   pub repo: ProjectRepository,
-  pub default_work_duration: i32,
-  pub default_break_duration: i32,
+  pub default_work_duration: u32,
+  pub default_break_duration: u32,
 }
 
 #[derive(Default)]
@@ -80,12 +80,12 @@ impl Default for State {
 pub struct Session {
   pub start: SystemTime,
   pub end: Option<SystemTime>,
-  pub duration: i32,
+  pub duration: u32,
   pub session_type: SessionType,
 }
 
 impl Session {
-  pub fn new(session_type: SessionType, duration: i32) -> Self {
+  pub fn new(session_type: SessionType, duration: u32) -> Self {
     Self {
       start: SystemTime::now(),
       end: None,
