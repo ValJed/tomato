@@ -2,7 +2,7 @@
 
 Tomato is a simple pomodoro TUI. 
 
-Designed to be flexible allowing to choose if you need a break or not if you're in you flow state. 
+Designed to be flexible allowing to choose if you need a break or not in order to respect your flow state. 
 
 It'll also allow you to modify the duration of your session when starting it.
 
