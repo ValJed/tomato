@@ -78,7 +78,7 @@ impl App {
         let session = self.current_session.as_ref().unwrap();
         let time = utils::render_timer(session.start, session.duration);
         if time.is_none() {
-          self.toggle_session();
+          self.stop_work_session();
           return;
         }
         let counter_widget = CounterWidget {
@@ -302,7 +302,6 @@ impl App {
         State::BreakInput => self.start_break_session(),
         _ => {}
       },
-
       _ => {}
     }
   }
@@ -354,7 +353,6 @@ impl App {
             } else {
               None
             };
-
             self.projects_list.selected_id = new_selected_id
           }
           Err(_) => {}
@@ -450,6 +448,8 @@ impl App {
     self.state = State::BreakSession;
     self.current_session = Some(Session::new(SessionType::Break, time));
   }
+
+  fn stop_work_session(&mut self) {}
 
   fn toggle_session(&mut self) {
     if self.current_session.is_none() {

@@ -82,6 +82,20 @@ impl ProjectRepository {
     Ok(())
   }
 
+  pub fn update_project_time(
+    &self,
+    id: usize,
+    time: u32,
+  ) -> Result<(), rusqlite::Error> {
+    self.connection.execute(
+      "UPDATE project SET time_spent = ?1, 
+        modification_date = CURRENT_TIMESTAMP 
+        WHERE id = ?2",
+      [time, id.to_string()],
+    )?;
+    Ok(())
+  }
+
   pub fn set_selected(
     &self,
     id: usize,
