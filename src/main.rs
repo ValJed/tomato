@@ -450,11 +450,13 @@ impl App {
 
   fn stop_work_session(&mut self) {
     let session = self.current_session.as_ref().unwrap();
-    let time = utils::render_timer(session.start, session.duration)
-      .unwrap_or(self.default_work_duration);
+    let spent_time = utils::get_spent_time(session.start, session.duration);
+
     if let Some(project_id) = self.get_selected_project().map(|p| p.id.clone())
     {
-      let updated = self.repo.update_project_time(project_id.clone(), time);
+      let updated = self
+        .repo
+        .update_project_time(project_id.clone(), spent_time);
       if updated.is_err() {
         utils::notify("Error when updating project spent time");
       }

@@ -29,6 +29,14 @@ pub fn render_timer_str(start: SystemTime, duration: u32) -> Option<String> {
   }
 }
 
+pub fn get_spent_time(start: SystemTime, duration: u32) -> u32 {
+  let duration_secs = duration * 60;
+  match render_timer(start, duration) {
+    None => duration_secs,
+    Some(seconds) => duration_secs - seconds,
+  }
+}
+
 pub fn center(
   area: Rect,
   horizontal: Constraint,
