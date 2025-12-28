@@ -15,18 +15,18 @@ pub fn render_timer(start: SystemTime, duration: u32) -> Option<u32> {
 }
 
 pub fn render_timer_str(start: SystemTime, duration: u32) -> Option<String> {
-  let seconds_res = render_timer(start, duration);
-  if seconds_res.is_none() {
-    return None;
-  }
-  let seconds = seconds_res.unwrap();
-  if seconds < 60 {
-    return Some(format!("{}s", seconds as i32).to_string());
-  }
+  match render_timer(start, duration) {
+    None => return None,
+    Some(seconds) => {
+      if seconds < 60 {
+        return Some(format!("{}s", seconds as i32).to_string());
+      }
+      let minutes = seconds / 60;
+      let remaining_seconds = seconds % 60;
 
-  let minutes = seconds / 60;
-  let remaining_seconds = minutes * 60;
-  return Some(format!("{}m {}s", minutes, remaining_seconds));
+      return Some(format!("{}m {}s", minutes, remaining_seconds));
+    }
+  }
 }
 
 pub fn center(
