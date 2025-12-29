@@ -24,21 +24,31 @@ impl ProjectRepository {
 
     connection.execute(
       "CREATE TABLE IF NOT EXISTS project (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                selected BOOLEAN NOT NULL DEFAULT FALSE,
-                time_spent INTEGER NOT NULL DEFAULT 0,
-                work_sessions INTEGER NOT NULL DEFAULT 0,
-                creation_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                modification_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )",
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            selected BOOLEAN NOT NULL DEFAULT FALSE,
+            time_spent INTEGER NOT NULL DEFAULT 0,
+            work_sessions INTEGER NOT NULL DEFAULT 0,
+            creation_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            modification_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );",
+      (),
+    )?;
+
+    connection.execute(
+      "CREATE TABLE IF NOT EXISTS session (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL,
+            date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            duration INTEGER NOT NULL DEFAULT 0
+        );",
       (),
     )?;
 
     Ok(Self { connection })
   }
 
-  pub fn get_all(&self) -> Result<Vec<Project>, rusqlite::Error> {
+  pub fn get_all_projects(&self) -> Result<Vec<Project>, rusqlite::Error> {
     let mut stmt = self
       .connection
       .prepare("SELECT * FROM project ORDER BY project.id ASC")?;
@@ -60,14 +70,18 @@ impl ProjectRepository {
     Ok(projects)
   }
 
-  pub fn add(&self, name: String) -> Result<(), rusqlite::Error> {
+  pub fn add_project(&self, name: String) -> Result<(), rusqlite::Error> {
     self
       .connection
       .execute("INSERT INTO project (name) VALUES (?1)", [&name])?;
     Ok(())
   }
 
-  pub fn update(&self, id: usize, name: String) -> Result<(), rusqlite::Error> {
+  pub fn update_project(
+    &self,
+    id: usize,
+    name: String,
+  ) -> Result<(), rusqlite::Error> {
     self.connection.execute(
             "UPDATE project SET name = ?1, modification_date = CURRENT_TIMESTAMP WHERE id = ?2",
             (name, id),
@@ -75,47 +89,69 @@ impl ProjectRepository {
     Ok(())
   }
 
-  pub fn delete(&self, id: usize) -> Result<(), rusqlite::Error> {
-    self
-      .connection
-      .execute("DELETE FROM project WHERE id = ?1", [&id.to_string()])?;
+  pub fn delete_project(&mut self, id: usize) -> Result<(), rusqlite::Error> {
+    let tx = self.connection.transaction()?;
+    tx.execute("DELETE FROM project WHERE id = ?1", [&id.to_string()])?;
+    tx.execute(
+      "DELETE FROM session WHERE project_id = ?1",
+      [&id.to_string()],
+    )?;
+
+    tx.commit()?;
     Ok(())
   }
 
-  pub fn update_project_time(
-    &self,
-    id: usize,
-    time: u32,
+  pub fn add_session(
+    &mut self,
+    project_id: usize,
+    duration: u32,
   ) -> Result<(), rusqlite::Error> {
-    self.connection.execute(
+    let tx = self.connection.transaction()?;
+    let dur = duration as usize;
+    tx.execute(
+      "INSERT INTO session (project_id, duration) VALUES (?1, ?2);",
+      [&project_id, &dur],
+    )?;
+    tx.execute(
       "UPDATE project SET time_spent = time_spent + ?1, 
+        work_sessions = work_sessions + 1,
         modification_date = CURRENT_TIMESTAMP 
         WHERE id = ?2",
-      (time, id),
+      (&dur, &project_id),
     )?;
+    tx.commit()?;
     Ok(())
   }
 
   pub fn set_selected(
-    &self,
+    &mut self,
     id: usize,
     selected: bool,
   ) -> Result<(), rusqlite::Error> {
+    let tx = self.connection.transaction()?;
     if selected == true {
-      self.connection.execute(
-                "UPDATE project SET selected = 0, modification_date = CURRENT_TIMESTAMP WHERE selected = 1",
-                []
-            )?;
+      tx.execute(
+        "UPDATE project SET selected = 0, 
+        modification_date = CURRENT_TIMESTAMP 
+        WHERE selected = 1",
+        [],
+      )?;
     }
     let selected_num = if selected == true { "1" } else { "0" };
-    self.connection.execute(
-            "UPDATE project SET selected = ?1, modification_date = CURRENT_TIMESTAMP WHERE id = ?2",
-            [selected_num, &id.to_string()],
-        )?;
+    tx.execute(
+      "UPDATE project SET selected = ?1, 
+        modification_date = CURRENT_TIMESTAMP 
+        WHERE id = ?2",
+      [selected_num, &id.to_string()],
+    )?;
+    tx.commit()?;
     Ok(())
   }
 
-  pub fn get_by_id(&self, id: i32) -> Result<Option<Project>, rusqlite::Error> {
+  pub fn get_project_by_id(
+    &self,
+    id: i32,
+  ) -> Result<Option<Project>, rusqlite::Error> {
     let mut stmt = self
       .connection
       .prepare("SELECT * FROM project WHERE id = ?1")?;

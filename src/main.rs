@@ -30,7 +30,7 @@ impl App {
   pub fn new(user_config: &UserConfig) -> App {
     let repo =
       ProjectRepository::new(&user_config).expect("DB instantiation failed");
-    let projects = match repo.get_all() {
+    let projects = match repo.get_all_projects() {
       Ok(projs) => projs,
       Err(err) => {
         println!("err: {:?}", err);
@@ -307,7 +307,7 @@ impl App {
   }
 
   fn add_project(&mut self) {
-    match self.repo.add(self.input.clone()) {
+    match self.repo.add_project(self.input.clone()) {
       Ok(_) => self.get_projects(),
       Err(_err) => {
         utils::notify("Error when creating a project");
@@ -317,7 +317,7 @@ impl App {
 
   fn update_project(&mut self) {
     if let Some(project) = self.get_highlighted_project() {
-      match self.repo.update(project.id, self.input.clone()) {
+      match self.repo.update_project(project.id, self.input.clone()) {
         Ok(_) => self.get_projects(),
         Err(_) => {
           utils::notify("Error when updating a project");
@@ -327,7 +327,7 @@ impl App {
   }
 
   fn get_projects(&mut self) {
-    match self.repo.get_all() {
+    match self.repo.get_all_projects() {
       Ok(projects) => self.projects_list.projects = projects,
       Err(err) => {
         println!("err: {:?}", err);
@@ -362,7 +362,7 @@ impl App {
 
   fn delete_project(&mut self) {
     match self.get_highlighted_project() {
-      Some(project) => match self.repo.delete(project.id.clone()) {
+      Some(project) => match self.repo.delete_project(project.id.clone()) {
         Ok(()) => {
           self.get_projects();
         }
@@ -454,10 +454,11 @@ impl App {
 
     if let Some(project_id) = self.get_selected_project().map(|p| p.id.clone())
     {
-      let updated = self
-        .repo
-        .update_project_time(project_id.clone(), spent_time);
+      let updated = self.repo.add_session(project_id.clone(), spent_time);
       if updated.is_err() {
+        let err = updated.unwrap();
+
+        println!("err: {:?}", err);
         utils::notify("Error when updating project spent time");
       }
     }
