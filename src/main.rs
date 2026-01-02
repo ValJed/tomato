@@ -24,7 +24,9 @@ use repository::ProjectRepository;
 use structs::{
   App, Project, ProjectsList, Session, SessionType, State, UserConfig,
 };
-use widgets::{ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget};
+use widgets::{
+  CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget,
+};
 
 impl App {
   pub fn new(user_config: &UserConfig) -> App {
@@ -160,6 +162,12 @@ impl App {
         },
         frame.area(),
       ),
+      State::Calendar => frame.render_widget(
+        CalendarWidget {
+                // selected_date: ''
+            },
+        frame.area(),
+      ),
       _ => {}
     }
   }
@@ -172,10 +180,12 @@ impl App {
           State::WorkInput | State::BreakInput => {
             self.handle_num_input(key_event)
           }
-          State::ProjectsList => self.handle_list_input(key_event),
+          State::ProjectsList => self.handle_projects_list_input(key_event),
           State::ProjectsInputAdd | State::ProjectsInputUpdate => {
             self.handle_project_input(key_event)
           }
+          State::Calendar => self.handle_calendar_input(key_event),
+
           _ => self.handle_key_event(key_event),
         }
       }
@@ -210,11 +220,18 @@ impl App {
           self.list_projects();
         }
       },
+      KeyCode::Char('c') => match self.state {
+        State::BreakSession => {}
+        State::WorkSession => {}
+        _ => {
+          self.display_calendar();
+        }
+      },
       _ => {}
     }
   }
 
-  fn handle_list_input(&mut self, key_event: KeyEvent) {
+  fn handle_projects_list_input(&mut self, key_event: KeyEvent) {
     match key_event.code {
       KeyCode::Char('q') => self.exit(),
       KeyCode::Down | KeyCode::Char('j') => self.next_project(),
@@ -275,6 +292,13 @@ impl App {
         }
         _ => {}
       },
+      _ => {}
+    }
+  }
+
+  fn handle_calendar_input(&mut self, key_event: KeyEvent) {
+    match key_event.code {
+      KeyCode::Char('c') => self.state = State::None,
       _ => {}
     }
   }
@@ -429,6 +453,10 @@ impl App {
     // TODO: refresh projects ?
     self.projects_list.state.select(Some(0));
     self.state = State::ProjectsList;
+  }
+
+  fn display_calendar(&mut self) {
+    self.state = State::Calendar;
   }
 
   fn start_break_input(&mut self) {

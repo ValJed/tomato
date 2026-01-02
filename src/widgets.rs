@@ -6,21 +6,25 @@ use ratatui::{
   text::Line,
   widgets::{
     block::{Position, Title},
+    calendar::{CalendarEventStore, DateStyler, Monthly},
     Block, List, ListItem, ListState, Padding, Paragraph, StatefulWidget,
     Widget,
   },
 };
+use time::{Date, Month, OffsetDateTime};
 
 use crate::structs::{App, Project, ProjectsList, SessionType, State};
-use crate::utils::{center, truncate};
+use crate::utils::{center, notify, truncate};
+
+use std::time::SystemTime;
+
+const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
 pub struct InputWidget {
   pub title: String,
   pub input: String,
   pub width: u16,
 }
-
-const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
 impl Widget for InputWidget {
   fn render(self, area: Rect, buf: &mut Buffer) {
@@ -41,12 +45,6 @@ impl Widget for InputWidget {
 pub struct CounterWidget {
   pub time: String,
   pub session_type: SessionType,
-}
-
-pub struct ProjectsListWidget<'a> {
-  pub projects: &'a [Project],
-  pub selected_id: Option<usize>,
-  pub state: &'a mut ListState,
 }
 
 impl Widget for CounterWidget {
@@ -71,6 +69,12 @@ impl Widget for CounterWidget {
   }
 }
 
+pub struct ProjectsListWidget<'a> {
+  pub projects: &'a [Project],
+  pub selected_id: Option<usize>,
+  pub state: &'a mut ListState,
+}
+
 impl Widget for ProjectsListWidget<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
     let session_type = " Projects ";
@@ -82,6 +86,8 @@ impl Widget for ProjectsListWidget<'_> {
       "<D>".blue().bold(),
       " Update ".into(),
       "<U> ".blue().bold(),
+      " Info ".into(),
+      "<I> ".blue().bold(),
     ]));
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
@@ -145,6 +151,30 @@ impl Widget for ConfirmWidget {
   }
 }
 
+pub struct CalendarWidget {
+  // pub selected_date: Date,
+}
+
+impl Widget for CalendarWidget {
+  fn render(self, area: Rect, buf: &mut Buffer) {
+    let title = Title::from(" Calendar ");
+    let block = Block::bordered()
+      .title(title.alignment(Alignment::Center))
+      .padding(Padding::new(1, 1, 1, 1));
+    let confirm_area =
+      center(area, Constraint::Length(25), Constraint::Length(5));
+
+    let mut start = OffsetDateTime::now_local().unwrap().date();
+
+    notify(&start.to_string());
+
+    Paragraph::new("(y)es  (n)o")
+      .centered()
+      .block(block)
+      .render(confirm_area, buf)
+  }
+}
+
 // Rendering the main application widget
 impl Widget for &mut App {
   fn render(self, area: Rect, buf: &mut Buffer) {
@@ -159,12 +189,13 @@ impl Widget for &mut App {
       State::WorkInput | State::BreakInput => "<Enter>",
       _ => "<Space>",
     };
-    let projects = " Projects ";
     let instructions = Title::from(Line::from(vec![
       toggle_session.into(),
       main_cmd.blue().bold(),
-      projects.into(),
+      " Projects ".into(),
       "<P>".blue().bold(),
+      " Calendar ".into(),
+      "<C>".blue().bold(),
       " Quit ".into(),
       "<Q> ".blue().bold(),
     ]));

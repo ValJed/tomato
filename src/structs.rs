@@ -69,6 +69,7 @@ pub enum State {
   ProjectsList,
   ProjectsInputAdd,
   ProjectsInputUpdate,
+  Calendar,
 }
 
 impl Default for State {
