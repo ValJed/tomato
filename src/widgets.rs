@@ -161,17 +161,27 @@ impl Widget for CalendarWidget {
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
       .padding(Padding::new(1, 1, 1, 1));
-    let confirm_area =
-      center(area, Constraint::Length(25), Constraint::Length(5));
+    let cal_area = center(area, Constraint::Length(25), Constraint::Length(5));
 
     let mut start = OffsetDateTime::now_local().unwrap().date();
 
-    notify(&start.to_string());
+    let mut style = CalendarEventStore::today(
+      Style::default()
+        .add_modifier(Modifier::BOLD)
+        .bg(Color::Blue),
+    );
 
-    Paragraph::new("(y)es  (n)o")
-      .centered()
-      .block(block)
-      .render(confirm_area, buf)
+    let default_style = Style::default()
+      .add_modifier(Modifier::BOLD)
+      .bg(Color::Rgb(50, 50, 50));
+
+    Monthly::new(
+      Date::from_calendar_date(start.year(), start.month(), 1).unwrap(),
+      style,
+    )
+    .show_month_header(Style::default())
+    .default_style(default_style)
+    .render(area, buf);
   }
 }
 
