@@ -3,6 +3,7 @@ use ratatui::widgets::ListState;
 use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::time::SystemTime;
+use time::Date;
 
 use crate::repository::ProjectRepository;
 
@@ -36,8 +37,9 @@ pub struct App {
   pub exit: bool,
   pub current_session: Option<Session>,
   pub input: String,
-  pub projects_list: ProjectsList,
   pub repo: ProjectRepository,
+  pub projects_list: ProjectsList,
+  pub calendar: CalendarState,
   pub default_work_duration: u32,
   pub default_break_duration: u32,
 }
@@ -47,6 +49,12 @@ pub struct ProjectsList {
   pub projects: Vec<Project>,
   pub selected_id: Option<usize>,
   pub state: ListState,
+}
+
+#[derive(Default)]
+pub struct CalendarState {
+  pub selected_date: Option<Date>,
+  pub list_state: ListState,
 }
 
 #[derive(Copy, Clone, Debug)]

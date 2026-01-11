@@ -1,6 +1,7 @@
 use ratatui::{
   buffer::Buffer,
   layout::{Alignment, Constraint, Rect},
+  prelude::{Direction, Layout},
   style::{palette::tailwind::GRAY, Color, Modifier, Style, Stylize},
   symbols::border,
   text::Line,
@@ -151,21 +152,16 @@ impl Widget for ConfirmWidget {
   }
 }
 
-pub struct CalendarWidget {
-  // pub selected_date: Date,
+pub struct CalendarWidget<'a> {
+  pub selected_date: Date,
+  pub list_state: &'a mut ListState,
 }
 
-impl Widget for CalendarWidget {
+impl Widget for CalendarWidget<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
-    let title = Title::from(" Calendar ");
-    let block = Block::bordered()
-      .title(title.alignment(Alignment::Center))
-      .padding(Padding::new(1, 1, 1, 1));
-    let cal_area = center(area, Constraint::Length(25), Constraint::Length(5));
-
-    let mut start = OffsetDateTime::now_local().unwrap().date();
-
-    let mut style = CalendarEventStore::today(
+    let inner_area =
+      center(area, Constraint::Length(25), Constraint::Length(10));
+    let style = CalendarEventStore::today(
       Style::default()
         .add_modifier(Modifier::BOLD)
         .bg(Color::Blue),
@@ -175,13 +171,30 @@ impl Widget for CalendarWidget {
       .add_modifier(Modifier::BOLD)
       .bg(Color::Rgb(50, 50, 50));
 
-    Monthly::new(
-      Date::from_calendar_date(start.year(), start.month(), 1).unwrap(),
+    let header_style = Style::default()
+      .add_modifier(Modifier::BOLD)
+      .add_modifier(Modifier::DIM)
+      .fg(Color::LightYellow);
+
+    let layout = Layout::default()
+      .direction(Direction::Vertical)
+      .constraints(vec![Constraint::Length(25), Constraint::Length(25)])
+      .split(inner_area);
+
+    let cal = Monthly::new(
+      Date::from_calendar_date(
+        self.selected_date.year(),
+        self.selected_date.month(),
+        1,
+      )
+      .unwrap(),
       style,
     )
-    .show_month_header(Style::default())
+    .show_weekdays_header(header_style)
     .default_style(default_style)
-    .render(area, buf);
+    .show_month_header(Style::default());
+
+    cal.render(layout[0], buf);
   }
 }
 
