@@ -14,8 +14,8 @@ impl App {
       KeyCode::Char('a') => {
         self.state = State::ProjectsInputAdd;
       }
-      KeyCode::Char('d') => {
-        self.state = State::ConfirmDelete;
+      KeyCode::Char('f') => {
+        self.state = State::ConfirmFinished;
       }
       KeyCode::Char('u') => {
         self.input = match self.get_highlighted_project() {
@@ -89,7 +89,7 @@ impl App {
   }
 
   pub fn get_projects(&mut self) {
-    match self.repo.get_all_projects() {
+    match self.repo.get_projects_in_progress() {
       Ok(projects) => self.projects_list.projects = projects,
       Err(err) => {
         println!("err: {:?}", err);
@@ -122,14 +122,16 @@ impl App {
     }
   }
 
-  pub fn delete_project(&mut self) {
+  pub fn finish_project(&mut self) {
     match self.get_highlighted_project() {
-      Some(project) => match self.repo.delete_project(project.id.clone()) {
-        Ok(()) => {
-          self.get_projects();
+      Some(project) => {
+        match self.repo.mark_project_finished(project.id.clone()) {
+          Ok(()) => {
+            self.get_projects();
+          }
+          Err(_) => {}
         }
-        Err(_) => {}
-      },
+      }
       None => {}
     }
   }

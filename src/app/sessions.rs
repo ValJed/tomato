@@ -31,7 +31,7 @@ impl App {
 
     if let Some(project_id) = self.get_selected_project().map(|p| p.id.clone())
     {
-      let updated = self.repo.add_session(project_id.clone(), spent_time);
+      let updated = self.repo.add_session(project_id, spent_time);
       if updated.is_err() {
         let err = updated.unwrap();
 

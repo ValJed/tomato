@@ -23,7 +23,7 @@ impl App {
   pub fn new(user_config: &UserConfig) -> App {
     let repo =
       ProjectRepository::new(&user_config).expect("DB instantiation failed");
-    let projects = match repo.get_all_projects() {
+    let projects = match repo.get_projects_in_progress() {
       Ok(projs) => projs,
       Err(err) => {
         println!("err: {:?}", err);
@@ -47,6 +47,7 @@ impl App {
       },
       calendar: CalendarState {
         selected_date: None,
+        sessions: vec![],
         list_state: ListState::default(),
       },
       default_work_duration: user_config.default_work_duration,
@@ -111,9 +112,9 @@ impl App {
         },
         frame.area(),
       ),
-      State::ConfirmDelete => frame.render_widget(
+      State::ConfirmFinished => frame.render_widget(
         ConfirmWidget {
-          question: String::from(" Delete Project ? "),
+          question: String::from(" Finish Project ? "),
         },
         frame.area(),
       ),
@@ -159,10 +160,8 @@ impl App {
       ),
       State::Calendar => frame.render_widget(
         CalendarWidget {
-          selected_date: self
-            .calendar
-            .selected_date
-            .unwrap_or(OffsetDateTime::now_local().unwrap().date()),
+          selected_date: self.calendar.selected_date.unwrap(),
+          sessions: &self.calendar.sessions,
           list_state: &mut self.calendar.list_state,
         },
         frame.area(),
@@ -198,8 +197,8 @@ impl App {
       KeyCode::Char('y') => match self.state {
         State::ConfirmBreak => self.start_break_input(),
         State::ConfirmWork => self.start_work_input(),
-        State::ConfirmDelete => {
-          self.delete_project();
+        State::ConfirmFinished => {
+          self.finish_project();
           self.state = State::ProjectsList;
         }
         _ => {}
@@ -207,7 +206,7 @@ impl App {
       KeyCode::Char('n') => match self.state {
         State::ConfirmBreak => self.start_work_input(),
         State::ConfirmWork => self.start_break_input(),
-        State::ConfirmDelete => self.state = State::ProjectsList,
+        State::ConfirmFinished => self.state = State::ProjectsList,
         _ => {}
       },
       // For now we can check projects only when not in a session
