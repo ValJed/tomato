@@ -1,8 +1,10 @@
-use crate::structs::{Project, UserConfig};
+use crate::structs::{Project, SessionPerDay, UserConfig};
 use rusqlite::{Connection, Result};
 use std::error::Error;
 use std::fs::create_dir_all;
 use std::path::Path;
+
+use time::Date;
 
 pub struct ProjectRepository {
   connection: Connection,
@@ -29,6 +31,7 @@ impl ProjectRepository {
             selected BOOLEAN NOT NULL DEFAULT FALSE,
             time_spent INTEGER NOT NULL DEFAULT 0,
             work_sessions INTEGER NOT NULL DEFAULT 0,
+            finished BOOLEAN NOT NULL DEFAULT FALSE,
             creation_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             modification_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );",
@@ -48,10 +51,12 @@ impl ProjectRepository {
     Ok(Self { connection })
   }
 
-  pub fn get_all_projects(&self) -> Result<Vec<Project>, rusqlite::Error> {
-    let mut stmt = self
-      .connection
-      .prepare("SELECT * FROM project ORDER BY project.id ASC")?;
+  pub fn get_projects_in_progress(
+    &self,
+  ) -> Result<Vec<Project>, rusqlite::Error> {
+    let mut stmt = self.connection.prepare(
+      "SELECT * FROM project WHERE finished = false ORDER BY project.id ASC",
+    )?;
 
     let projects = stmt
       .query_map([], |row| {
@@ -61,8 +66,9 @@ impl ProjectRepository {
           selected: row.get(2)?,
           time_spent: row.get(3)?,
           work_sessions: row.get(4)?,
-          creation_date: row.get(5)?,
-          modification_date: row.get(6)?,
+          finished: row.get(5)?,
+          creation_date: row.get(6)?,
+          modification_date: row.get(7)?,
         })
       })?
       .collect::<Result<Vec<_>, _>>()?;
@@ -89,15 +95,14 @@ impl ProjectRepository {
     Ok(())
   }
 
-  pub fn delete_project(&mut self, id: usize) -> Result<(), rusqlite::Error> {
-    let tx = self.connection.transaction()?;
-    tx.execute("DELETE FROM project WHERE id = ?1", [&id.to_string()])?;
-    tx.execute(
-      "DELETE FROM session WHERE project_id = ?1",
+  pub fn mark_project_finished(
+    &mut self,
+    id: usize,
+  ) -> Result<(), rusqlite::Error> {
+    self.connection.execute(
+      "UPDATE project SET finished = true WHERE id = ?1",
       [&id.to_string()],
     )?;
-
-    tx.commit()?;
     Ok(())
   }
 
@@ -165,11 +170,38 @@ impl ProjectRepository {
         selected: row.get(2)?,
         time_spent: row.get(3)?,
         work_sessions: row.get(4)?,
-        creation_date: row.get(5)?,
-        modification_date: row.get(6)?,
+        finished: row.get(5)?,
+        creation_date: row.get(6)?,
+        modification_date: row.get(7)?,
       }))
     } else {
       Ok(None)
     }
+  }
+
+  pub fn get_sessions_per_day(
+    &self,
+    date: &Date,
+  ) -> Result<Vec<SessionPerDay>, rusqlite::Error> {
+    let request = r#"
+      SELECT project.name AS project_name, DATE(session.date) as date, SUM(duration) AS duration
+      FROM session 
+      INNER JOIN project ON session.project_id = project.id
+      WHERE DATE(session.date) = DATE(?1)
+      GROUP BY project_id
+    "#;
+    let mut stmt = self.connection.prepare(request)?;
+
+    let sessions = stmt
+      .query_map([date], |row| {
+        Ok(SessionPerDay {
+          project_name: row.get(0)?,
+          date: row.get(1)?,
+          duration: row.get(2)?,
+        })
+      })?
+      .collect::<Result<Vec<SessionPerDay>, _>>()?;
+
+    Ok(sessions)
   }
 }

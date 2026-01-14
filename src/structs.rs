@@ -54,6 +54,7 @@ pub struct ProjectsList {
 #[derive(Default)]
 pub struct CalendarState {
   pub selected_date: Option<Date>,
+  pub sessions: Vec<SessionPerDay>,
   pub list_state: ListState,
 }
 
@@ -70,7 +71,7 @@ pub enum State {
   BreakSession,
   ConfirmBreak,
   ConfirmWork,
-  ConfirmDelete,
+  ConfirmFinished,
   ChooseTime,
   WorkInput,
   BreakInput,
@@ -93,6 +94,13 @@ pub struct Session {
   pub session_type: SessionType,
 }
 
+#[derive(Debug)]
+pub struct SessionPerDay {
+  pub project_name: String,
+  pub date: Date,
+  pub duration: u32,
+}
+
 impl Session {
   pub fn new(session_type: SessionType, duration: u32) -> Self {
     Self {
@@ -104,13 +112,14 @@ impl Session {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Project {
   pub id: usize,
   pub name: String,
   pub selected: bool,
   pub time_spent: i32,
   pub work_sessions: i32,
+  pub finished: bool,
   pub creation_date: String,
   pub modification_date: String,
 }
