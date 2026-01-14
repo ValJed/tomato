@@ -17,16 +17,23 @@ pub fn render_timer(start: SystemTime, duration: u32) -> Option<u32> {
 pub fn render_timer_str(start: SystemTime, duration: u32) -> Option<String> {
   match render_timer(start, duration) {
     None => return None,
-    Some(seconds) => {
-      if seconds < 60 {
-        return Some(format!("{}s", seconds as i32).to_string());
-      }
-      let minutes = seconds / 60;
-      let remaining_seconds = seconds % 60;
-
-      return Some(format!("{}m {}s", minutes, remaining_seconds));
-    }
+    Some(seconds) => Some(render_timer_seconds(seconds)),
   }
+}
+
+pub fn render_timer_seconds(seconds: u32) -> String {
+  if seconds < 60 {
+    return format!("{}s", seconds as i32).to_string();
+  }
+  let minutes = seconds / 60;
+  let hours = minutes / 60;
+  if hours != 0 {
+    let remaining_minutes = minutes % 60;
+    return format!("{}h {}m", hours, remaining_minutes);
+  }
+  let remaining_seconds = seconds % 60;
+
+  return format!("{}m {}s", minutes, remaining_seconds);
 }
 
 pub fn get_spent_time(start: SystemTime, duration: u32) -> u32 {
@@ -76,12 +83,12 @@ pub fn truncate(text: String, size: usize) -> String {
 mod tests {
   use super::*;
   #[test]
-  fn test_to_time_str() {
-    assert_eq!(to_time_str(30.0), "30s");
-    assert_eq!(to_time_str(60.0), "1m 0s");
-    assert_eq!(to_time_str(90.0), "1m 30s");
-    assert_eq!(to_time_str(120.0), "2m 0s");
-    assert_eq!(to_time_str(150.0), "2m 30s");
+  fn test_render_timer_seconds() {
+    assert_eq!(render_timer_seconds(30), "30s");
+    assert_eq!(render_timer_seconds(120), "2m 0s");
+    assert_eq!(render_timer_seconds(125), "2m 5s");
+    assert_eq!(render_timer_seconds(3600), "1h 0m");
+    assert_eq!(render_timer_seconds(3800), "1h 3m");
   }
 
   #[test]
