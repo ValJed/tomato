@@ -14,8 +14,10 @@ use ratatui::{
 };
 use time::{Date, Month, OffsetDateTime};
 
-use crate::structs::{App, Project, ProjectsList, SessionType, State};
-use crate::utils::{center, notify, truncate};
+use crate::structs::{
+  App, Project, ProjectsList, SessionPerDay, SessionType, State,
+};
+use crate::utils::{center, notify, render_timer_seconds, truncate};
 
 use std::time::SystemTime;
 
@@ -83,8 +85,8 @@ impl Widget for ProjectsListWidget<'_> {
     let instructions = Title::from(Line::from(vec![
       " Add ".into(),
       "<A>".blue().bold(),
-      " Delete ".into(),
-      "<D>".blue().bold(),
+      " Finished ".into(),
+      "<F>".blue().bold(),
       " Update ".into(),
       "<U> ".blue().bold(),
       " Info ".into(),
@@ -154,47 +156,74 @@ impl Widget for ConfirmWidget {
 
 pub struct CalendarWidget<'a> {
   pub selected_date: Date,
+  pub sessions: &'a [SessionPerDay],
   pub list_state: &'a mut ListState,
 }
 
 impl Widget for CalendarWidget<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
-    let inner_area =
-      center(area, Constraint::Length(25), Constraint::Length(10));
-    let style = CalendarEventStore::today(
+    let layout_area =
+      center(area, Constraint::Length(50), Constraint::Length(15));
+    let layout = Layout::default()
+      .direction(Direction::Vertical)
+      .constraints(vec![Constraint::Length(10), Constraint::Length(25)])
+      .split(layout_area);
+    let cal_layout = center(
+      layout[0],
+      Constraint::Length(25),
+      Constraint::Percentage(100),
+    );
+
+    let cal_title = Title::from(" Sessions ");
+    let sessions_block = Block::bordered()
+      .title(cal_title.alignment(Alignment::Center))
+      .padding(Padding::new(1, 1, 1, 1));
+
+    let mut cal_event = CalendarEventStore::default();
+    cal_event.add(
+      self.selected_date,
       Style::default()
         .add_modifier(Modifier::BOLD)
         .bg(Color::Blue),
     );
-
     let default_style = Style::default()
       .add_modifier(Modifier::BOLD)
       .bg(Color::Rgb(50, 50, 50));
-
     let header_style = Style::default()
       .add_modifier(Modifier::BOLD)
       .add_modifier(Modifier::DIM)
       .fg(Color::LightYellow);
-
-    let layout = Layout::default()
-      .direction(Direction::Vertical)
-      .constraints(vec![Constraint::Length(25), Constraint::Length(25)])
-      .split(inner_area);
-
     let cal = Monthly::new(
       Date::from_calendar_date(
         self.selected_date.year(),
         self.selected_date.month(),
-        1,
+        self.selected_date.day(),
       )
       .unwrap(),
-      style,
+      cal_event,
     )
     .show_weekdays_header(header_style)
     .default_style(default_style)
     .show_month_header(Style::default());
 
-    cal.render(layout[0], buf);
+    let sessions: Vec<ListItem> = self
+      .sessions
+      .iter()
+      .enumerate()
+      .map(|(i, session)| {
+        let timer = render_timer_seconds(session.duration);
+        let content = format!("{} - {}", session.project_name, timer);
+        // if is_current {
+        //   return ListItem::from(content).style(SELECTED_STYLE);
+        // }
+
+        ListItem::from(content)
+      })
+      .collect();
+    let list = List::new(sessions).block(sessions_block);
+
+    cal.render(cal_layout, buf);
+    StatefulWidget::render(list, layout[1], buf, self.list_state);
   }
 }
 
