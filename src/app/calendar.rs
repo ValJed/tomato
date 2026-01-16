@@ -1,4 +1,4 @@
-use crate::structs::{App, SessionPerDay, State};
+use crate::structs::{App, CalendarSection, State};
 use crate::utils;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use time::{Date, Duration, OffsetDateTime};
@@ -7,14 +7,40 @@ impl App {
   pub fn handle_calendar_input(&mut self, key_event: KeyEvent) {
     match key_event.code {
       KeyCode::Char('c') => {
-        self.calendar.selected_date = None;
-        self.calendar.sessions = vec![];
+        self.reset_calendar();
         self.state = State::None;
       }
-      KeyCode::Char('h') | KeyCode::Left => self.prev_day(),
-      KeyCode::Char('j') | KeyCode::Down => self.next_week(),
-      KeyCode::Char('k') | KeyCode::Up => self.prev_week(),
-      KeyCode::Char('l') | KeyCode::Right => self.next_day(),
+      KeyCode::Char('h') | KeyCode::Left => {
+        if let CalendarSection::Calendar = self.calendar.selected_section {
+          self.prev_day()
+        }
+      }
+      KeyCode::Char('j') | KeyCode::Down => {
+        match self.calendar.selected_section {
+          CalendarSection::Calendar => self.next_week(),
+          CalendarSection::List => {
+            self.select_next_session();
+          }
+        }
+      }
+      KeyCode::Char('k') | KeyCode::Up => {
+        match self.calendar.selected_section {
+          CalendarSection::Calendar => self.prev_week(),
+          CalendarSection::List => {
+            self.select_prev_session();
+          }
+        }
+      }
+      KeyCode::Char('l') | KeyCode::Right => {
+        if let CalendarSection::Calendar = self.calendar.selected_section {
+          self.next_day()
+        }
+      }
+      KeyCode::Tab => self.switch_cal_section(),
+      KeyCode::Char('p') => {
+        self.reset_calendar();
+        self.list_projects()
+      }
       KeyCode::Char('q') => self.exit(),
       _ => {}
     }
@@ -94,5 +120,53 @@ impl App {
         self.calendar.sessions = vec![]
       }
     }
+  }
+
+  fn switch_cal_section(&mut self) {
+    match self.calendar.selected_section {
+      CalendarSection::Calendar => {
+        self.calendar.list_state.select(Some(0));
+        self.calendar.selected_section = CalendarSection::List
+      }
+      CalendarSection::List => {
+        self.calendar.list_state.select(Some(0));
+        self.calendar.selected_section = CalendarSection::Calendar
+      }
+    }
+  }
+
+  pub fn select_next_session(&mut self) {
+    let i = match self.calendar.list_state.selected() {
+      None => 0,
+      Some(index) => {
+        if index >= self.calendar.sessions.len() - 1 {
+          0
+        } else {
+          index + 1
+        }
+      }
+    };
+    self.calendar.list_state.select(Some(i));
+  }
+
+  pub fn select_prev_session(&mut self) {
+    let i = match self.calendar.list_state.selected() {
+      None => 0,
+      Some(index) => {
+        if index == 0 {
+          self.calendar.sessions.len() - 1
+        } else {
+          index - 1
+        }
+      }
+    };
+    self.calendar.list_state.select(Some(i));
+  }
+
+  pub fn reset_calendar(&mut self) {
+    self.calendar.selected_date = None;
+    self.calendar.selected_section = CalendarSection::Calendar;
+    self.calendar.list_state.select(Some(0));
+    self.calendar.sessions = vec![];
   }
 }
