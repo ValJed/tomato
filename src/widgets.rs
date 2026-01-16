@@ -1,25 +1,24 @@
 use ratatui::{
   buffer::Buffer,
-  layout::{Alignment, Constraint, Rect},
+  layout::Constraint::{Fill, Length, Percentage},
+  layout::{Alignment, Rect},
   prelude::{Direction, Layout},
-  style::{palette::tailwind::GRAY, Color, Modifier, Style, Stylize},
+  style::{Color, Modifier, Style, Stylize, palette::tailwind::GRAY},
   symbols::border,
   text::Line,
   widgets::{
-    block::{Position, Title},
-    calendar::{CalendarEventStore, DateStyler, Monthly},
     Block, List, ListItem, ListState, Padding, Paragraph, StatefulWidget,
     Widget,
+    block::{Position, Title},
+    calendar::{CalendarEventStore, Monthly},
   },
 };
-use time::{Date, Month, OffsetDateTime};
+use time::Date;
 
 use crate::structs::{
-  App, Project, ProjectsList, SessionPerDay, SessionType, State,
+  App, CalendarSection, Project, SessionPerDay, SessionType, State,
 };
-use crate::utils::{center, notify, render_timer_seconds, truncate};
-
-use std::time::SystemTime;
+use crate::utils::{center, render_timer_seconds, truncate};
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
@@ -35,8 +34,7 @@ impl Widget for InputWidget {
     let block = Block::bordered()
       .title(title.alignment(Alignment::Left))
       .padding(Padding::new(1, 1, 1, 1));
-    let counter_area =
-      center(area, Constraint::Length(self.width), Constraint::Length(5));
+    let counter_area = center(area, Length(self.width), Length(5));
 
     Paragraph::new(self.input)
       .centered()
@@ -61,8 +59,7 @@ impl Widget for CounterWidget {
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
       .padding(Padding::new(1, 1, 1, 1));
-    let counter_area =
-      center(area, Constraint::Length(25), Constraint::Length(5));
+    let counter_area = center(area, Length(25), Length(5));
 
     let time = format!("Time: {}", self.time);
     Paragraph::new(time)
@@ -83,14 +80,14 @@ impl Widget for ProjectsListWidget<'_> {
     let session_type = " Projects ";
     let title = Title::from(session_type.bold());
     let instructions = Title::from(Line::from(vec![
+      " <A>".blue().bold(),
       " Add ".into(),
-      "<A>".blue().bold(),
-      " Finished ".into(),
       "<F>".blue().bold(),
+      " Finished ".into(),
+      "<U>".blue().bold(),
       " Update ".into(),
-      "<U> ".blue().bold(),
+      "<I>".blue().bold(),
       " Info ".into(),
-      "<I> ".blue().bold(),
     ]));
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
@@ -128,8 +125,7 @@ impl Widget for ProjectsListWidget<'_> {
       .collect();
 
     let list = List::new(projects).block(block);
-    let list_area =
-      center(area, Constraint::Length(100), Constraint::Length(10));
+    let list_area = center(area, Length(100), Length(10));
     StatefulWidget::render(list, list_area, buf, self.state);
   }
 }
@@ -144,8 +140,7 @@ impl Widget for ConfirmWidget {
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
       .padding(Padding::new(1, 1, 1, 1));
-    let confirm_area =
-      center(area, Constraint::Length(25), Constraint::Length(5));
+    let confirm_area = center(area, Length(25), Length(5));
 
     Paragraph::new("(y)es  (n)o")
       .centered()
@@ -157,35 +152,44 @@ impl Widget for ConfirmWidget {
 pub struct CalendarWidget<'a> {
   pub selected_date: Date,
   pub sessions: &'a [SessionPerDay],
+  pub selected_section: &'a CalendarSection,
   pub list_state: &'a mut ListState,
 }
 
 impl Widget for CalendarWidget<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
-    let layout_area =
-      center(area, Constraint::Length(50), Constraint::Length(15));
+    let layout_area = center(area, Length(50), Percentage(80));
     let layout = Layout::default()
       .direction(Direction::Vertical)
-      .constraints(vec![Constraint::Length(10), Constraint::Length(25)])
+      .constraints(vec![Length(8), Fill(1)])
       .split(layout_area);
-    let cal_layout = center(
-      layout[0],
-      Constraint::Length(25),
-      Constraint::Percentage(100),
-    );
+    let cal_layout = center(layout[0], Length(25), Percentage(100));
 
     let cal_title = Title::from(" Sessions ");
+    let select_instruction = match self.selected_section {
+      CalendarSection::Calendar => " Select List ",
+      CalendarSection::List => " Select Calendar ",
+    };
+    let instructions = Title::from(Line::from(vec![
+      " <Tab>".blue().bold(),
+      select_instruction.into(),
+    ]));
     let sessions_block = Block::bordered()
       .title(cal_title.alignment(Alignment::Center))
+      .title(
+        instructions
+          .alignment(Alignment::Center)
+          .position(Position::Bottom),
+      )
       .padding(Padding::new(1, 1, 1, 1));
 
+    let cal_selected_color = match self.selected_section {
+      CalendarSection::Calendar => Color::Blue,
+      CalendarSection::List => Color::DarkGray,
+    };
+
     let mut cal_event = CalendarEventStore::default();
-    cal_event.add(
-      self.selected_date,
-      Style::default()
-        .add_modifier(Modifier::BOLD)
-        .bg(Color::Blue),
-    );
+    cal_event.add(self.selected_date, Style::default().bg(cal_selected_color));
     let default_style = Style::default()
       .add_modifier(Modifier::BOLD)
       .bg(Color::Rgb(50, 50, 50));
@@ -206,21 +210,27 @@ impl Widget for CalendarWidget<'_> {
     .default_style(default_style)
     .show_month_header(Style::default());
 
-    let sessions: Vec<ListItem> = self
+    let highlighted_index = match self.list_state.selected() {
+      Some(index) => index,
+      None => 0,
+    };
+    let sessions_list: Vec<ListItem> = self
       .sessions
       .iter()
       .enumerate()
       .map(|(i, session)| {
+        let is_current = highlighted_index == i;
         let timer = render_timer_seconds(session.duration);
         let content = format!("{} - {}", session.project_name, timer);
-        // if is_current {
-        //   return ListItem::from(content).style(SELECTED_STYLE);
-        // }
 
+        if is_current && let CalendarSection::List = self.selected_section {
+          return ListItem::from(content).style(SELECTED_STYLE);
+        }
         ListItem::from(content)
       })
       .collect();
-    let list = List::new(sessions).block(sessions_block);
+
+    let list = List::new(sessions_list).block(sessions_block);
 
     cal.render(cal_layout, buf);
     StatefulWidget::render(list, layout[1], buf, self.list_state);
@@ -239,17 +249,17 @@ impl Widget for &mut App {
 
     let main_cmd = match self.state {
       State::WorkInput | State::BreakInput => "<Enter>",
-      _ => "<Space>",
+      _ => " <Space>",
     };
     let instructions = Title::from(Line::from(vec![
-      toggle_session.into(),
       main_cmd.blue().bold(),
-      " Projects ".into(),
+      toggle_session.into(),
       "<P>".blue().bold(),
-      " Calendar ".into(),
+      " Projects ".into(),
       "<C>".blue().bold(),
+      " Calendar ".into(),
+      "<Q>".blue().bold(),
       " Quit ".into(),
-      "<Q> ".blue().bold(),
     ]));
     let selected_project = self.get_selected_project();
     let selected_project_name = match selected_project {

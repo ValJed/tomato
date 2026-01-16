@@ -10,14 +10,15 @@ use ratatui::{
 };
 
 use crate::repository::ProjectRepository;
-use crate::structs::{App, CalendarState, ProjectsList, State, UserConfig};
+use crate::structs::{
+  App, CalendarSection, CalendarState, ProjectsList, State, UserConfig,
+};
 use crate::tui;
 use crate::utils;
 use crate::widgets::{
   CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget,
 };
 use std::time::Duration;
-use time::OffsetDateTime;
 
 impl App {
   pub fn new(user_config: &UserConfig) -> App {
@@ -49,6 +50,7 @@ impl App {
         selected_date: None,
         sessions: vec![],
         list_state: ListState::default(),
+        selected_section: CalendarSection::Calendar,
       },
       default_work_duration: user_config.default_work_duration,
       default_break_duration: user_config.default_break_duration,
@@ -163,6 +165,7 @@ impl App {
           selected_date: self.calendar.selected_date.unwrap(),
           sessions: &self.calendar.sessions,
           list_state: &mut self.calendar.list_state,
+          selected_section: &self.calendar.selected_section,
         },
         frame.area(),
       ),

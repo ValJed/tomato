@@ -51,11 +51,24 @@ pub struct ProjectsList {
   pub state: ListState,
 }
 
+#[derive(Debug)]
+pub enum CalendarSection {
+  Calendar,
+  List,
+}
+
+impl Default for CalendarSection {
+  fn default() -> Self {
+    CalendarSection::Calendar
+  }
+}
+
 #[derive(Default)]
 pub struct CalendarState {
   pub selected_date: Option<Date>,
   pub sessions: Vec<SessionPerDay>,
   pub list_state: ListState,
+  pub selected_section: CalendarSection,
 }
 
 #[derive(Copy, Clone, Debug)]

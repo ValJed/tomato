@@ -24,6 +24,9 @@ impl App {
         };
         self.state = State::ProjectsInputUpdate;
       }
+      KeyCode::Char('c') => {
+        self.display_calendar();
+      }
       KeyCode::Char(' ') => {
         let selected_index = self.projects_list.state.selected();
         match selected_index {
