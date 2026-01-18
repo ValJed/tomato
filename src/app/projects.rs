@@ -72,7 +72,11 @@ impl App {
   }
 
   pub fn add_project(&mut self) {
-    match self.repo.add_project(self.input.clone()) {
+    let trimmed = self.input.trim();
+    if trimmed.is_empty() {
+      return;
+    }
+    match self.repo.add_project(trimmed) {
       Ok(_) => self.get_projects(),
       Err(_err) => {
         utils::notify("Error when creating a project");

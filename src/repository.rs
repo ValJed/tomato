@@ -76,10 +76,10 @@ impl ProjectRepository {
     Ok(projects)
   }
 
-  pub fn add_project(&self, name: String) -> Result<(), rusqlite::Error> {
+  pub fn add_project(&self, name: &str) -> Result<(), rusqlite::Error> {
     self
       .connection
-      .execute("INSERT INTO project (name) VALUES (?1)", [&name])?;
+      .execute("INSERT INTO project (name) VALUES (?1)", [name])?;
     Ok(())
   }
 
