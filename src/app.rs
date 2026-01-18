@@ -4,9 +4,10 @@ pub mod sessions;
 
 use color_eyre;
 use ratatui::{
-  crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-  widgets::ListState,
   Frame,
+  crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+  layout::{Alignment, Constraint::Length, Rect},
+  widgets::{Block, ListState, Padding, Paragraph, block::Title},
 };
 
 use crate::repository::ProjectRepository;
@@ -16,9 +17,10 @@ use crate::structs::{
 use crate::tui;
 use crate::utils;
 use crate::widgets::{
-  CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget,
+  CalendarWidget, ConfirmWidget, CounterWidget, ProjectsListWidget,
 };
 use std::time::Duration;
+use tui_input::Input;
 
 impl App {
   pub fn new(user_config: &UserConfig) -> App {
@@ -39,7 +41,7 @@ impl App {
       state: State::None,
       exit: false,
       current_session: None,
-      input: String::new(),
+      input: Input::new(String::new()),
       repo,
       projects_list: ProjectsList {
         projects,
@@ -120,22 +122,12 @@ impl App {
         },
         frame.area(),
       ),
-      State::WorkInput => frame.render_widget(
-        InputWidget {
-          title: String::from(" Set Time: "),
-          input: self.input.clone(),
-          width: 25,
-        },
-        frame.area(),
-      ),
-      State::BreakInput => frame.render_widget(
-        InputWidget {
-          title: String::from(" Set Time: "),
-          input: self.input.clone(),
-          width: 25,
-        },
-        frame.area(),
-      ),
+      State::WorkInput => {
+        self.render_input(String::from(" Set Time: "), 25, frame);
+      }
+      State::BreakInput => {
+        self.render_input(String::from(" Set Time: "), 25, frame);
+      }
       State::ProjectsList => frame.render_widget(
         ProjectsListWidget {
           projects: &self.projects_list.projects,
@@ -144,22 +136,12 @@ impl App {
         },
         frame.area(),
       ),
-      State::ProjectsInputAdd => frame.render_widget(
-        InputWidget {
-          title: String::from(" Add Project "),
-          input: self.input.clone(),
-          width: 50,
-        },
-        frame.area(),
-      ),
-      State::ProjectsInputUpdate => frame.render_widget(
-        InputWidget {
-          title: String::from(" Update Project "),
-          input: self.input.clone(),
-          width: 50,
-        },
-        frame.area(),
-      ),
+      State::ProjectsInputAdd => {
+        self.render_input(String::from(" Add Project "), 50, frame);
+      }
+      State::ProjectsInputUpdate => {
+        self.render_input(String::from(" Update Project "), 50, frame);
+      }
       State::Calendar => frame.render_widget(
         CalendarWidget {
           selected_date: self.calendar.selected_date.unwrap(),
@@ -171,6 +153,22 @@ impl App {
       ),
       _ => {}
     }
+  }
+
+  fn render_input(&self, title: String, width: u16, frame: &mut Frame) {
+    let title = Title::from(title);
+    let block = Block::bordered()
+      .title(title.alignment(Alignment::Left))
+      .padding(Padding::new(1, 1, 1, 1));
+    let input_area = utils::center(frame.area(), Length(width), Length(5));
+
+    let scroll = self.input.visual_scroll(width as usize);
+    let paragraph = Paragraph::new(self.input.value())
+      .scroll((0, scroll as u16))
+      .centered()
+      .block(block);
+
+    frame.render_widget(paragraph, input_area);
   }
 
   // updates the application's state based on user input
@@ -234,18 +232,18 @@ impl App {
   fn handle_num_input(&mut self, key_event: KeyEvent) {
     match key_event.code {
       KeyCode::Char('q') => self.exit(),
-      KeyCode::Char('0') => self.input = self.input.clone() + "0",
-      KeyCode::Char('1') => self.input = self.input.clone() + "1",
-      KeyCode::Char('2') => self.input = self.input.clone() + "2",
-      KeyCode::Char('3') => self.input = self.input.clone() + "3",
-      KeyCode::Char('4') => self.input = self.input.clone() + "4",
-      KeyCode::Char('5') => self.input = self.input.clone() + "5",
-      KeyCode::Char('6') => self.input = self.input.clone() + "6",
-      KeyCode::Char('7') => self.input = self.input.clone() + "7",
-      KeyCode::Char('8') => self.input = self.input.clone() + "8",
-      KeyCode::Char('9') => self.input = self.input.clone() + "9",
+      // KeyCode::Char('0') => self.input = self.input.clone() + "0",
+      // KeyCode::Char('1') => self.input = self.input.clone() + "1",
+      // KeyCode::Char('2') => self.input = self.input.clone() + "2",
+      // KeyCode::Char('3') => self.input = self.input.clone() + "3",
+      // KeyCode::Char('4') => self.input = self.input.clone() + "4",
+      // KeyCode::Char('5') => self.input = self.input.clone() + "5",
+      // KeyCode::Char('6') => self.input = self.input.clone() + "6",
+      // KeyCode::Char('7') => self.input = self.input.clone() + "7",
+      // KeyCode::Char('8') => self.input = self.input.clone() + "8",
+      // KeyCode::Char('9') => self.input = self.input.clone() + "9",
       KeyCode::Backspace => {
-        let mut chars = self.input.chars();
+        let mut chars = self.input.value().chars();
         chars.next_back();
         self.input = chars.as_str().into();
       }
@@ -254,6 +252,14 @@ impl App {
         State::BreakInput => self.start_break_session(),
         _ => {}
       },
+      KeyCode::Char(char) => {
+        println!("char: {:?}", char);
+        if "0123456789".contains(char) {
+          self.input = Input::new(
+            self.input.value().to_string() + char.to_string().as_str(),
+          )
+        }
+      }
       _ => {}
     }
   }

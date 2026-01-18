@@ -22,27 +22,6 @@ use crate::utils::{center, render_timer_seconds, truncate};
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
-pub struct InputWidget {
-  pub title: String,
-  pub input: String,
-  pub width: u16,
-}
-
-impl Widget for InputWidget {
-  fn render(self, area: Rect, buf: &mut Buffer) {
-    let title = Title::from(self.title);
-    let block = Block::bordered()
-      .title(title.alignment(Alignment::Left))
-      .padding(Padding::new(1, 1, 1, 1));
-    let counter_area = center(area, Length(self.width), Length(5));
-
-    Paragraph::new(self.input)
-      .centered()
-      .block(block)
-      .render(counter_area, buf);
-  }
-}
-
 pub struct CounterWidget {
   pub time: String,
   pub session_type: SessionType,

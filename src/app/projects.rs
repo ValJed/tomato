@@ -1,6 +1,7 @@
 use crate::structs::{App, Project, State};
 use crate::utils;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use tui_input::Input;
 
 impl App {
   pub fn handle_projects_list_input(&mut self, key_event: KeyEvent) {
@@ -18,10 +19,11 @@ impl App {
         self.state = State::ConfirmFinished;
       }
       KeyCode::Char('u') => {
-        self.input = match self.get_highlighted_project() {
+        let value = match self.get_highlighted_project() {
           Some(project) => project.name.clone(),
           None => String::new(),
         };
+        self.input = Input::new(value);
         self.state = State::ProjectsInputUpdate;
       }
       KeyCode::Char('c') => {
@@ -46,23 +48,25 @@ impl App {
   pub fn handle_project_input(&mut self, key_event: KeyEvent) {
     match key_event.code {
       KeyCode::Char(char) => {
-        self.input = self.input.clone() + &char.to_string()
+        let char_str = char.to_string();
+        let new_input = self.input.value().to_string() + char_str.as_str();
+        self.input = Input::new(new_input);
       }
       KeyCode::Backspace => {
-        let mut chars = self.input.chars();
+        let mut chars = self.input.value().chars();
         chars.next_back();
         self.input = chars.as_str().into();
       }
       KeyCode::Enter => match self.state {
         State::ProjectsInputAdd => {
           self.add_project();
-          self.input = String::new();
+          self.input.reset();
           self.state = State::ProjectsList;
           // Create project
         }
         State::ProjectsInputUpdate => {
           self.update_project();
-          self.input = String::new();
+          self.input.reset();
           self.state = State::ProjectsList;
         }
         _ => {}
@@ -72,7 +76,7 @@ impl App {
   }
 
   pub fn add_project(&mut self) {
-    let trimmed = self.input.trim();
+    let trimmed = self.input.value().trim();
     if trimmed.is_empty() {
       return;
     }
@@ -86,7 +90,7 @@ impl App {
 
   pub fn update_project(&mut self) {
     if let Some(project) = self.get_highlighted_project() {
-      match self.repo.update_project(project.id, self.input.clone()) {
+      match self.repo.update_project(project.id, self.input.value()) {
         Ok(_) => self.get_projects(),
         Err(_) => {
           utils::notify("Error when updating a project");
