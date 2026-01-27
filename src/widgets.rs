@@ -1,14 +1,17 @@
 use ratatui::{
   buffer::Buffer,
-  layout::Constraint::{Fill, Length, Percentage},
-  layout::{Alignment, Rect},
+  layout::{
+    Alignment,
+    Constraint::{Fill, Length, Percentage},
+    Rect,
+  },
   prelude::{Direction, Layout},
   style::{Color, Modifier, Style, Stylize, palette::tailwind::GRAY},
   symbols::border,
   text::Line,
   widgets::{
     Block, List, ListItem, ListState, Padding, Paragraph, StatefulWidget,
-    Widget,
+    Widget, Wrap,
     block::{Position, Title},
     calendar::{CalendarEventStore, Monthly},
   },
@@ -18,7 +21,9 @@ use time::Date;
 use crate::structs::{
   App, CalendarSection, Project, SessionPerDay, SessionType, State,
 };
-use crate::utils::{center, render_timer_seconds, truncate};
+use crate::utils::{
+  break_line, center, render_timer_seconds, truncate, wrap_text,
+};
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
@@ -143,8 +148,9 @@ impl Widget for CalendarWidget<'_> {
       .constraints(vec![Length(8), Fill(1)])
       .split(layout_area);
     let cal_layout = center(layout[0], Length(25), Percentage(100));
+    let sessions_layout = layout[1];
 
-    let cal_title = Title::from(" Sessions ");
+    let sessions_title = Title::from(" Sessions ");
     let select_instruction = match self.selected_section {
       CalendarSection::Calendar => " Select List ",
       CalendarSection::List => " Select Calendar ",
@@ -154,7 +160,7 @@ impl Widget for CalendarWidget<'_> {
       select_instruction.into(),
     ]));
     let sessions_block = Block::bordered()
-      .title(cal_title.alignment(Alignment::Center))
+      .title(sessions_title.alignment(Alignment::Center))
       .title(
         instructions
           .alignment(Alignment::Center)
@@ -201,18 +207,20 @@ impl Widget for CalendarWidget<'_> {
         let is_current = highlighted_index == i;
         let timer = render_timer_seconds(session.duration);
         let content = format!("{} - {}", session.project_name, timer);
+        let wrapped = break_line(content, (sessions_layout.width - 4) as usize);
 
         if is_current && let CalendarSection::List = self.selected_section {
-          return ListItem::from(content).style(SELECTED_STYLE);
+          return ListItem::from(wrapped).style(SELECTED_STYLE);
         }
-        ListItem::from(content)
+
+        ListItem::from(wrapped)
       })
       .collect();
 
     let list = List::new(sessions_list).block(sessions_block);
 
     cal.render(cal_layout, buf);
-    StatefulWidget::render(list, layout[1], buf, self.list_state);
+    StatefulWidget::render(list, sessions_layout, buf, self.list_state);
   }
 }
 

@@ -1,5 +1,8 @@
 use notify_rust::Notification;
-use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::{
+  layout::{Constraint, Flex, Layout, Rect},
+  text::Line,
+};
 use std::time::SystemTime;
 
 pub fn render_timer(start: SystemTime, duration: u32) -> Option<u32> {
@@ -76,6 +79,33 @@ pub fn truncate(text: String, size: usize) -> String {
   let mut cloned = text.clone();
   cloned.truncate(size);
   let formatted = cloned + "...";
+  formatted
+}
+
+pub fn break_line(line: String, max_line_length: usize) -> String {
+  if line.len() < max_line_length {
+    return line;
+  }
+  let mut position = 0;
+  let mut formatted = String::new();
+
+  loop {
+    let end = position + max_line_length;
+    if end >= line.len() {
+      let substring = &line[position..line.len()];
+      formatted.push_str(substring);
+      break;
+    }
+
+    let substring = &line[position..end];
+    let space_pos = substring.rfind(' ').unwrap_or(substring.len());
+    let space = if space_pos != substring.len() { 1 } else { 0 };
+    let mut updated = substring.to_string();
+    updated.replace_range(space_pos.., "\n");
+    formatted.push_str(updated.as_str());
+    position += space_pos + space;
+  }
+
   formatted
 }
 
