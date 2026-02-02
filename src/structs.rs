@@ -5,7 +5,7 @@ use std::default::Default;
 use std::time::SystemTime;
 use time::Date;
 
-use crate::repository::ProjectRepository;
+use crate::repository::Repository;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -31,7 +31,7 @@ pub struct App {
   pub exit: bool,
   pub current_session: Option<Session>,
   pub input: String,
-  pub repo: ProjectRepository,
+  pub repo: Repository,
   pub projects_list: ProjectsList,
   pub calendar: CalendarState,
   pub options: Options,
@@ -42,13 +42,6 @@ pub struct ProjectsList {
   pub projects: Vec<Project>,
   pub selected_id: Option<usize>,
   pub state: ListState,
-}
-
-#[derive(Default)]
-pub enum InputMode {
-  #[default]
-  Normal,
-  Editing,
 }
 
 #[derive(Debug)]

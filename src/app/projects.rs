@@ -1,4 +1,4 @@
-use crate::structs::{App, InputMode, Project, State};
+use crate::structs::{App, Project, State};
 use crate::utils;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 

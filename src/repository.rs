@@ -6,11 +6,11 @@ use std::path::Path;
 
 use time::Date;
 
-pub struct ProjectRepository {
+pub struct Repository {
   connection: Connection,
 }
 
-impl ProjectRepository {
+impl Repository {
   pub fn new(config: &UserConfig) -> Result<Self, Box<dyn Error>> {
     let db_location = config.db_location.clone();
     let (db_folder_path, _file) = db_location

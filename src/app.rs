@@ -15,10 +15,9 @@ use ratatui::{
   },
 };
 
-use crate::repository::ProjectRepository;
+use crate::repository::Repository;
 use crate::structs::{
-  App, CalendarSection, CalendarState, InputMode, Options, ProjectsList, State,
-  UserConfig,
+  App, CalendarSection, CalendarState, Options, ProjectsList, State, UserConfig,
 };
 use crate::tui;
 use crate::utils;
@@ -29,8 +28,7 @@ use std::time::Duration;
 
 impl App {
   pub fn new(user_config: &UserConfig) -> App {
-    let repo =
-      ProjectRepository::new(&user_config).expect("DB instantiation failed");
+    let repo = Repository::new(&user_config).expect("DB instantiation failed");
     let projects = match repo.get_projects_in_progress() {
       Ok(projs) => projs,
       Err(err) => {
