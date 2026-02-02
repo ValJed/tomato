@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::time::SystemTime;
 use time::Date;
-use tui_input::Input;
 
 use crate::repository::ProjectRepository;
 
@@ -37,7 +36,7 @@ pub struct App {
   pub state: State,
   pub exit: bool,
   pub current_session: Option<Session>,
-  pub input: Input,
+  pub input: String,
   pub repo: ProjectRepository,
   pub projects_list: ProjectsList,
   pub calendar: CalendarState,

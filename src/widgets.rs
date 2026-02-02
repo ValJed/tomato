@@ -11,7 +11,7 @@ use ratatui::{
   text::Line,
   widgets::{
     Block, List, ListItem, ListState, Padding, Paragraph, StatefulWidget,
-    Widget, Wrap,
+    Widget,
     block::{Position, Title},
     calendar::{CalendarEventStore, Monthly},
   },
@@ -21,9 +21,7 @@ use time::Date;
 use crate::structs::{
   App, CalendarSection, Project, SessionPerDay, SessionType, State,
 };
-use crate::utils::{
-  break_line, center, render_timer_seconds, truncate, wrap_text,
-};
+use crate::utils::{break_line, center, render_timer_seconds, truncate};
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
@@ -111,6 +109,40 @@ impl Widget for ProjectsListWidget<'_> {
     let list = List::new(projects).block(block);
     let list_area = center(area, Length(100), Length(10));
     StatefulWidget::render(list, list_area, buf, self.state);
+  }
+}
+
+pub struct InputWidget<'a> {
+  pub title: &'a str,
+  pub width: u16,
+  pub input: &'a str,
+}
+
+impl Widget for InputWidget<'_> {
+  fn render(self, area: Rect, buf: &mut Buffer) {
+    let title = Title::from(self.title);
+    let instructions =
+      Title::from(Line::from(vec![" <Enter>".blue().bold(), " Ok ".into()]));
+
+    let block = Block::bordered()
+      .title(title.alignment(Alignment::Left))
+      .title(
+        instructions
+          .alignment(Alignment::Center)
+          .position(Position::Bottom),
+      )
+      .padding(Padding::new(1, 1, 1, 1));
+    let input_area = center(area, Length(self.width), Length(5));
+    let available_width = input_area.width.saturating_sub(4) as usize; // 2 for borders, 2 for padding
+    let scroll = self
+      .input
+      .len()
+      .saturating_sub(available_width.saturating_sub(1));
+    let paragraph = Paragraph::new(self.input)
+      .scroll((0, scroll as u16))
+      .block(block);
+
+    paragraph.render(input_area, buf);
   }
 }
 

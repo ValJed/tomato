@@ -6,7 +6,8 @@ use time::{Date, Duration, OffsetDateTime};
 impl App {
   pub fn handle_calendar_input(&mut self, key_event: KeyEvent) {
     match key_event.code {
-      KeyCode::Char('c') => {
+      KeyCode::Char('q') => self.exit(),
+      KeyCode::Char('c') | KeyCode::Esc => {
         self.reset_calendar();
         self.state = State::None;
       }
@@ -41,7 +42,6 @@ impl App {
         self.reset_calendar();
         self.list_projects()
       }
-      KeyCode::Char('q') => self.exit(),
       _ => {}
     }
   }

@@ -1,7 +1,6 @@
-use crate::structs::{App, Project, State};
+use crate::structs::{App, InputMode, Project, State};
 use crate::utils;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
-use tui_input::Input;
 
 impl App {
   pub fn handle_projects_list_input(&mut self, key_event: KeyEvent) {
@@ -9,7 +8,7 @@ impl App {
       KeyCode::Char('q') => self.exit(),
       KeyCode::Down | KeyCode::Char('j') => self.next_project(),
       KeyCode::Up | KeyCode::Char('k') => self.prev_project(),
-      KeyCode::Char('p') => {
+      KeyCode::Char('p') | KeyCode::Esc => {
         self.state = State::None;
       }
       KeyCode::Char('a') => {
@@ -23,7 +22,8 @@ impl App {
           Some(project) => project.name.clone(),
           None => String::new(),
         };
-        self.input = Input::new(value);
+
+        self.input = String::from(value);
         self.state = State::ProjectsInputUpdate;
       }
       KeyCode::Char('c') => {
@@ -49,34 +49,37 @@ impl App {
     match key_event.code {
       KeyCode::Char(char) => {
         let char_str = char.to_string();
-        let new_input = self.input.value().to_string() + char_str.as_str();
-        self.input = Input::new(new_input);
+        let new_input = self.input.to_string() + char_str.as_str();
+        self.input = String::from(new_input);
       }
       KeyCode::Backspace => {
-        let mut chars = self.input.value().chars();
+        let mut chars = self.input.chars();
         chars.next_back();
         self.input = chars.as_str().into();
       }
       KeyCode::Enter => match self.state {
         State::ProjectsInputAdd => {
           self.add_project();
-          self.input.reset();
+          self.input = String::new();
           self.state = State::ProjectsList;
-          // Create project
         }
         State::ProjectsInputUpdate => {
           self.update_project();
-          self.input.reset();
+          self.input = String::new();
           self.state = State::ProjectsList;
         }
         _ => {}
       },
+      KeyCode::Esc => {
+        self.input = String::new();
+        self.state = State::ProjectsList;
+      }
       _ => {}
     }
   }
 
   pub fn add_project(&mut self) {
-    let trimmed = self.input.value().trim();
+    let trimmed = self.input.trim();
     if trimmed.is_empty() {
       return;
     }
@@ -90,7 +93,7 @@ impl App {
 
   pub fn update_project(&mut self) {
     if let Some(project) = self.get_highlighted_project() {
-      match self.repo.update_project(project.id, self.input.value()) {
+      match self.repo.update_project(project.id, &self.input) {
         Ok(_) => self.get_projects(),
         Err(_) => {
           utils::notify("Error when updating a project");

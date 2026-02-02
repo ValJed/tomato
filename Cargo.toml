@@ -12,4 +12,3 @@ ratatui = { version = "0.28.0", features = ["widget-calendar"] }
 rusqlite = { version = "0.37.0", features = ["bundled", "time"] }
 serde = { version = "1.0.215", features = ["derive"] }
 time = "0.3.44"
-tui-input = "0.15.0"
