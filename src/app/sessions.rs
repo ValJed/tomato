@@ -3,23 +3,23 @@ use crate::utils;
 
 impl App {
   pub fn start_work_input(&mut self) {
-    self.input = String::from(self.default_work_duration.to_string());
+    self.input = String::from(self.options.work_duration.to_string());
     self.state = State::WorkInput
   }
 
   pub fn start_break_input(&mut self) {
-    self.input = String::from(self.default_break_duration.to_string());
+    self.input = String::from(self.options.break_duration.to_string());
     self.state = State::BreakInput;
   }
 
   pub fn start_work_session(&mut self) {
-    let time: u32 = self.input.parse().unwrap_or(self.default_work_duration);
+    let time: u32 = self.input.parse().unwrap_or(self.options.work_duration);
     self.state = State::WorkSession;
     self.current_session = Some(Session::new(SessionType::Work, time));
   }
 
   pub fn start_break_session(&mut self) {
-    let time: u32 = self.input.parse().unwrap_or(self.default_break_duration);
+    let time: u32 = self.input.parse().unwrap_or(self.options.break_duration);
     self.state = State::BreakSession;
     self.current_session = Some(Session::new(SessionType::Break, time));
   }

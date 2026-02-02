@@ -10,8 +10,6 @@ use crate::repository::ProjectRepository;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserConfig {
-  pub default_work_duration: u32,
-  pub default_break_duration: u32,
   pub db_location: String,
 }
 
@@ -24,11 +22,7 @@ impl Default for UserConfig {
       Err(_) => String::new(),
     };
 
-    Self {
-      default_work_duration: 25,
-      default_break_duration: 5,
-      db_location,
-    }
+    Self { db_location }
   }
 }
 
@@ -40,8 +34,7 @@ pub struct App {
   pub repo: ProjectRepository,
   pub projects_list: ProjectsList,
   pub calendar: CalendarState,
-  pub default_work_duration: u32,
-  pub default_break_duration: u32,
+  pub options: Options,
 }
 
 #[derive(Default)]
@@ -142,4 +135,13 @@ pub struct Project {
   pub finished: bool,
   pub creation_date: String,
   pub modification_date: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Options {
+  pub id: u32,
+  pub work_duration: u32,
+  pub break_duration: u32,
+  pub ask_before_work: bool,
+  pub ask_before_break: bool,
 }

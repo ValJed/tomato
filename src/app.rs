@@ -17,7 +17,7 @@ use ratatui::{
 
 use crate::repository::ProjectRepository;
 use crate::structs::{
-  App, CalendarSection, CalendarState, InputMode, ProjectsList, State,
+  App, CalendarSection, CalendarState, InputMode, Options, ProjectsList, State,
   UserConfig,
 };
 use crate::tui;
@@ -42,6 +42,14 @@ impl App {
       Some(proj) => Some(proj.id),
       None => None,
     };
+    let options = repo.create_of_get_options().unwrap_or(Options {
+      id: 1,
+      work_duration: 25,
+      break_duration: 5,
+      ask_before_work: false,
+      ask_before_break: false,
+    });
+
     App {
       state: State::None,
       exit: false,
@@ -59,8 +67,7 @@ impl App {
         list_state: ListState::default(),
         selected_section: CalendarSection::Calendar,
       },
-      default_work_duration: user_config.default_work_duration,
-      default_break_duration: user_config.default_break_duration,
+      options,
     }
   }
 
@@ -253,7 +260,6 @@ impl App {
         _ => {}
       },
       KeyCode::Char(char) => {
-        println!("char: {:?}", char);
         if "0123456789".contains(char) {
           self.input =
             String::from(self.input.to_string() + char.to_string().as_str())

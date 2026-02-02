@@ -1,4 +1,4 @@
-use crate::structs::{Project, SessionPerDay, UserConfig};
+use crate::structs::{Options, Project, SessionPerDay, UserConfig};
 use rusqlite::{Connection, Result};
 use std::error::Error;
 use std::fs::create_dir_all;
@@ -48,7 +48,44 @@ impl ProjectRepository {
       (),
     )?;
 
+    connection.execute(
+      "CREATE TABLE IF NOT EXISTS options (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            work_duration INTEGER DEFAULT 25,
+            break_duration INTEGER DEFAULT 5,
+            ask_before_work BOOLEAN NOT NULL DEFAULT FALSE,
+            ask_before_break BOOLEAN NOT NULL DEFAULT TRUE
+        );",
+      (),
+    )?;
+
     Ok(Self { connection })
+  }
+
+  pub fn create_of_get_options(&self) -> Result<Options, rusqlite::Error> {
+    self.connection.execute(
+      "INSERT OR IGNORE INTO options (
+            id,
+            work_duration, 
+            break_duration, 
+            ask_before_work, 
+            ask_before_break
+        ) 
+        VALUES (1, 25, 5, false, false)",
+      (),
+    )?;
+
+    self
+      .connection
+      .query_row("SELECT * FROM options LIMIT 1", [], |row| {
+        Ok(Options {
+          id: row.get(0)?,
+          work_duration: row.get(1)?,
+          break_duration: row.get(2)?,
+          ask_before_work: row.get(3)?,
+          ask_before_break: row.get(4)?,
+        })
+      })
   }
 
   pub fn get_projects_in_progress(
@@ -58,7 +95,7 @@ impl ProjectRepository {
       "SELECT * FROM project WHERE finished = false ORDER BY project.id ASC",
     )?;
 
-    let projects = stmt
+    stmt
       .query_map([], |row| {
         Ok(Project {
           id: row.get(0)?,
@@ -71,9 +108,7 @@ impl ProjectRepository {
           modification_date: row.get(7)?,
         })
       })?
-      .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(projects)
+      .collect::<Result<Vec<_>, _>>()
   }
 
   pub fn add_project(&self, name: &str) -> Result<(), rusqlite::Error> {
@@ -124,8 +159,8 @@ impl ProjectRepository {
         WHERE id = ?2",
       (&dur, &project_id),
     )?;
-    tx.commit()?;
-    Ok(())
+
+    tx.commit()
   }
 
   pub fn set_selected(
@@ -149,8 +184,8 @@ impl ProjectRepository {
         WHERE id = ?2",
       [selected_num, &id.to_string()],
     )?;
-    tx.commit()?;
-    Ok(())
+
+    tx.commit()
   }
 
   pub fn get_project_by_id(
@@ -192,7 +227,7 @@ impl ProjectRepository {
     "#;
     let mut stmt = self.connection.prepare(request)?;
 
-    let sessions = stmt
+    stmt
       .query_map([date], |row| {
         Ok(SessionPerDay {
           project_name: row.get(0)?,
@@ -200,8 +235,6 @@ impl ProjectRepository {
           duration: row.get(2)?,
         })
       })?
-      .collect::<Result<Vec<SessionPerDay>, _>>()?;
-
-    Ok(sessions)
+      .collect::<Result<Vec<SessionPerDay>, _>>()
   }
 }
