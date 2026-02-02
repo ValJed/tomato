@@ -19,7 +19,8 @@ use ratatui::{
 use time::Date;
 
 use crate::structs::{
-  App, CalendarSection, Project, SessionPerDay, SessionType, State,
+  App, CalendarSection, Options, OptionsItems, Project, SessionPerDay,
+  SessionType, State,
 };
 use crate::utils::{break_line, center, render_timer_seconds, truncate};
 
@@ -277,6 +278,8 @@ impl Widget for &mut App {
       " Projects ".into(),
       "<C>".blue().bold(),
       " Calendar ".into(),
+      "<O>".blue().bold(),
+      " Options ".into(),
       "<Q>".blue().bold(),
       " Quit ".into(),
     ]));
@@ -299,5 +302,47 @@ impl Widget for &mut App {
       )
       .border_set(border::THICK)
       .render(area, buf);
+  }
+}
+
+pub struct OptionsWidget<'a> {
+  pub data: &'a Options,
+  pub selected_index: usize,
+  pub list: &'a [OptionsItems; 4],
+}
+
+impl Widget for OptionsWidget<'_> {
+  fn render(self, area: Rect, buf: &mut Buffer) {
+    let title = Title::from(" Options ".bold());
+    let instructions =
+      Title::from(Line::from(vec!["<U>".blue().bold(), " Update ".into()]));
+
+    let options_area = center(area, Length(50), Length(20));
+    let lines: Vec<Line> = self
+      .list
+      .iter()
+      .map(|item| {
+        let value = match item {
+          OptionsItems::WorkDuration => "Work duration",
+          OptionsItems::BreakDuration => "Break duration",
+          OptionsItems::AskBeforeWork => "Ask time before work session",
+          OptionsItems::AskBeforeBreak => "Ask time before break session",
+        };
+
+        Line::from(value)
+      })
+      .collect();
+
+    let block = Block::bordered()
+      .title(title.alignment(Alignment::Left))
+      .title(
+        instructions
+          .alignment(Alignment::Center)
+          .position(Position::Bottom),
+      );
+    let inner = block.inner(options_area);
+    block.render(options_area, buf);
+
+    Paragraph::new(lines).render(inner, buf);
   }
 }

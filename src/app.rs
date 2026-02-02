@@ -1,4 +1,5 @@
 pub mod calendar;
+pub mod options;
 pub mod projects;
 pub mod sessions;
 
@@ -6,23 +7,19 @@ use color_eyre;
 use ratatui::{
   Frame,
   crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
-  layout::{Alignment, Constraint::Length},
-  style::{Color, Modifier, Style, Stylize, palette::tailwind::GRAY},
-  text::Line,
-  widgets::{
-    Block, ListState, Padding, Paragraph,
-    block::{Position, Title},
-  },
+  widgets::ListState,
 };
 
 use crate::repository::Repository;
 use crate::structs::{
-  App, CalendarSection, CalendarState, Options, ProjectsList, State, UserConfig,
+  App, CalendarSection, CalendarState, Options, OptionsItems, OptionsState,
+  ProjectsList, State, UserConfig,
 };
 use crate::tui;
 use crate::utils;
 use crate::widgets::{
-  CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, ProjectsListWidget,
+  CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, OptionsWidget,
+  ProjectsListWidget,
 };
 use std::time::Duration;
 
@@ -65,7 +62,16 @@ impl App {
         list_state: ListState::default(),
         selected_section: CalendarSection::Calendar,
       },
-      options,
+      options: OptionsState {
+        data: options,
+        selected_index: 0,
+        list: [
+          OptionsItems::WorkDuration,
+          OptionsItems::BreakDuration,
+          OptionsItems::AskBeforeWork,
+          OptionsItems::AskBeforeBreak,
+        ],
+      },
     }
   }
 
@@ -182,6 +188,15 @@ impl App {
         },
         frame.area(),
       ),
+      State::Options => frame.render_widget(
+        OptionsWidget {
+          data: &self.options.data,
+          selected_index: self.options.selected_index,
+          list: &self.options.list,
+        },
+        frame.area(),
+      ),
+
       _ => {}
     }
   }
@@ -199,6 +214,7 @@ impl App {
             self.handle_project_input(key_event)
           }
           State::Calendar => self.handle_calendar_input(key_event),
+          State::Options => self.handler_options_input(key_event),
           _ => self.handle_key_event(key_event),
         }
       }
@@ -238,6 +254,13 @@ impl App {
         State::WorkSession => {}
         _ => {
           self.display_calendar();
+        }
+      },
+      KeyCode::Char('o') => match self.state {
+        State::BreakSession => {}
+        State::WorkSession => {}
+        _ => {
+          self.display_options();
         }
       },
       _ => {}

@@ -34,7 +34,7 @@ pub struct App {
   pub repo: Repository,
   pub projects_list: ProjectsList,
   pub calendar: CalendarState,
-  pub options: Options,
+  pub options: OptionsState,
 }
 
 #[derive(Default)]
@@ -85,6 +85,7 @@ pub enum State {
   ProjectsInputAdd,
   ProjectsInputUpdate,
   Calendar,
+  Options,
 }
 
 impl Default for State {
@@ -128,6 +129,21 @@ pub struct Project {
   pub finished: bool,
   pub creation_date: String,
   pub modification_date: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum OptionsItems {
+  WorkDuration,
+  BreakDuration,
+  AskBeforeWork,
+  AskBeforeBreak,
+}
+
+#[derive(Debug, Clone)]
+pub struct OptionsState {
+  pub data: Options,
+  pub selected_index: usize,
+  pub list: [OptionsItems; 4],
 }
 
 #[derive(Debug, Clone)]
