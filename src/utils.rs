@@ -109,6 +109,14 @@ pub fn break_line(line: String, max_line_length: usize) -> String {
   formatted
 }
 
+pub fn convert_bool_to_string(value: bool) -> String {
+  if value {
+    return String::from("[X]");
+  } else {
+    return String::from("[ ]");
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

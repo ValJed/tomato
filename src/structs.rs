@@ -1,3 +1,4 @@
+use crate::app::options::{Options, OptionsState};
 use dirs::data_dir;
 use ratatui::widgets::ListState;
 use serde::{Deserialize, Serialize};
@@ -129,28 +130,4 @@ pub struct Project {
   pub finished: bool,
   pub creation_date: String,
   pub modification_date: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum OptionsItems {
-  WorkDuration,
-  BreakDuration,
-  AskBeforeWork,
-  AskBeforeBreak,
-}
-
-#[derive(Debug, Clone)]
-pub struct OptionsState {
-  pub data: Options,
-  pub selected_index: usize,
-  pub list: [OptionsItems; 4],
-}
-
-#[derive(Debug, Clone)]
-pub struct Options {
-  pub id: u32,
-  pub work_duration: u32,
-  pub break_duration: u32,
-  pub ask_before_work: bool,
-  pub ask_before_break: bool,
 }

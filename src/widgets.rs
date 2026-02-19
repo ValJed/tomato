@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use ratatui::{
   buffer::Buffer,
   layout::{
@@ -19,10 +21,12 @@ use ratatui::{
 use time::Date;
 
 use crate::structs::{
-  App, CalendarSection, Options, OptionsItems, Project, SessionPerDay,
-  SessionType, State,
+  App, CalendarSection, Project, SessionPerDay, SessionType, State,
 };
-use crate::utils::{break_line, center, render_timer_seconds, truncate};
+use crate::utils::{
+  break_line, center, convert_bool_to_string, render_timer_seconds, truncate,
+};
+use crate::{app::options::Options, utils::notify};
 
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
 
@@ -308,7 +312,6 @@ impl Widget for &mut App {
 pub struct OptionsWidget<'a> {
   pub data: &'a Options,
   pub selected_index: usize,
-  pub list: &'a [OptionsItems; 4],
 }
 
 impl Widget for OptionsWidget<'_> {
@@ -316,33 +319,46 @@ impl Widget for OptionsWidget<'_> {
     let title = Title::from(" Options ".bold());
     let instructions =
       Title::from(Line::from(vec!["<U>".blue().bold(), " Update ".into()]));
+    let options_area = center(area, Length(50), Length(8));
 
-    let options_area = center(area, Length(50), Length(20));
-    let lines: Vec<Line> = self
-      .list
+    let lines = self.data.get_list();
+    let names_lines: Vec<Line> = lines
       .iter()
-      .map(|item| {
-        let value = match item {
-          OptionsItems::WorkDuration => "Work duration",
-          OptionsItems::BreakDuration => "Break duration",
-          OptionsItems::AskBeforeWork => "Ask time before work session",
-          OptionsItems::AskBeforeBreak => "Ask time before break session",
+      .enumerate()
+      .map(|(i, line)| {
+        let text = if i == self.selected_index {
+          format!("> {}", line.1)
+        } else {
+          line.1.clone()
         };
 
-        Line::from(value)
+        Line::raw(text)
       })
       .collect();
 
+    let values_lines: Vec<Line> =
+      lines.iter().map(|line| Line::raw(&line.2)).collect();
+
     let block = Block::bordered()
       .title(title.alignment(Alignment::Left))
+      // .padding(Padding::top(1))
+      .padding(Padding::uniform(1))
       .title(
         instructions
           .alignment(Alignment::Center)
           .position(Position::Bottom),
       );
     let inner = block.inner(options_area);
+    let layout = Layout::default()
+      .direction(Direction::Horizontal)
+      .constraints(vec![Fill(1), Length(5)])
+      .split(inner);
+    let names_layout = layout[0];
+    let values_layout = layout[1];
+
     block.render(options_area, buf);
 
-    Paragraph::new(lines).render(inner, buf);
+    Paragraph::new(names_lines).render(names_layout, buf);
+    Paragraph::new(values_lines).render(values_layout, buf);
   }
 }

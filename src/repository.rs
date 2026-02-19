@@ -1,4 +1,5 @@
-use crate::structs::{Options, Project, SessionPerDay, UserConfig};
+use crate::app::options::Options;
+use crate::structs::{Project, SessionPerDay, UserConfig};
 use rusqlite::{Connection, Result};
 use std::error::Error;
 use std::fs::create_dir_all;

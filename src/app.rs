@@ -12,8 +12,7 @@ use ratatui::{
 
 use crate::repository::Repository;
 use crate::structs::{
-  App, CalendarSection, CalendarState, Options, OptionsItems, OptionsState,
-  ProjectsList, State, UserConfig,
+  App, CalendarSection, CalendarState, ProjectsList, State, UserConfig,
 };
 use crate::tui;
 use crate::utils;
@@ -21,6 +20,7 @@ use crate::widgets::{
   CalendarWidget, ConfirmWidget, CounterWidget, InputWidget, OptionsWidget,
   ProjectsListWidget,
 };
+use options::{Options, OptionsState};
 use std::time::Duration;
 
 impl App {
@@ -65,12 +65,7 @@ impl App {
       options: OptionsState {
         data: options,
         selected_index: 0,
-        list: [
-          OptionsItems::WorkDuration,
-          OptionsItems::BreakDuration,
-          OptionsItems::AskBeforeWork,
-          OptionsItems::AskBeforeBreak,
-        ],
+        options_number: 4,
       },
     }
   }
@@ -192,11 +187,9 @@ impl App {
         OptionsWidget {
           data: &self.options.data,
           selected_index: self.options.selected_index,
-          list: &self.options.list,
         },
         frame.area(),
       ),
-
       _ => {}
     }
   }
