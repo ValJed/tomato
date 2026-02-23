@@ -40,7 +40,23 @@ impl App {
   }
 
   pub fn update_option(&mut self) {
-    // let cur_option = self.options.se
+    let list = self.options.data.get_list();
+    let Some((_, option)) = list
+      .iter()
+      .enumerate()
+      .find(|(i, _)| *i == self.options.selected_index)
+    else {
+      return;
+    };
+
+    let cur_value = self.options.data.get_value(option.0);
+    match cur_value {
+      BoolOrInt::Int(val) => {}
+      BoolOrInt::Bool(val) => self.options.data.set_value(option.0, !val),
+    }
+
+    println!("cur_value: {:?}", cur_value);
+    // use option here
   }
 }
 
@@ -69,6 +85,7 @@ pub enum OptionField {
   AskBeforeBreak,
 }
 
+#[derive(Debug)]
 pub enum BoolOrInt {
   Bool(bool),
   Int(u32),
@@ -100,14 +117,21 @@ impl Options {
     ]
   }
 
-  pub fn get_value(&self, value: &OptionField) -> BoolOrInt {
-    match value {
+  pub fn get_value(&self, field: OptionField) -> BoolOrInt {
+    match field {
       OptionField::WorkDuration => BoolOrInt::Int(self.work_duration),
       OptionField::BreakDuration => BoolOrInt::Int(self.break_duration),
       OptionField::AskBeforeWork => BoolOrInt::Bool(self.ask_before_work),
       OptionField::AskBeforeBreak => BoolOrInt::Bool(self.ask_before_break),
     }
   }
-}
 
-// Bridge between enum and struct — read a value
+  pub fn set_value(&self, field: OptionField, value: BoolOrInt) {
+    match field {
+      OptionField::WorkDuration => {}
+      OptionField::BreakDuration => {}
+      OptionField::AskBeforeWork => {}
+      OptionField::AskBeforeBreak => {}
+    };
+  }
+}
