@@ -3,13 +3,21 @@ use crate::utils;
 
 impl App {
   pub fn start_work_input(&mut self) {
-    self.input = String::from(self.options.data.work_duration.to_string());
-    self.state = State::WorkInput
+    if self.options.data.ask_before_work {
+      self.input = String::from(self.options.data.work_duration.to_string());
+      self.state = State::WorkInput
+    } else {
+      self.start_work_session()
+    }
   }
 
   pub fn start_break_input(&mut self) {
-    self.input = String::from(self.options.data.break_duration.to_string());
-    self.state = State::BreakInput;
+    if self.options.data.ask_before_break {
+      self.input = String::from(self.options.data.break_duration.to_string());
+      self.state = State::BreakInput;
+    } else {
+      self.start_break_session();
+    }
   }
 
   pub fn start_work_session(&mut self) {
@@ -17,8 +25,8 @@ impl App {
       .input
       .parse()
       .unwrap_or(self.options.data.work_duration);
-    self.state = State::WorkSession;
     self.current_session = Some(Session::new(SessionType::Work, time));
+    self.state = State::WorkSession;
   }
 
   pub fn start_break_session(&mut self) {
@@ -26,8 +34,8 @@ impl App {
       .input
       .parse()
       .unwrap_or(self.options.data.break_duration);
-    self.state = State::BreakSession;
     self.current_session = Some(Session::new(SessionType::Break, time));
+    self.state = State::BreakSession;
   }
 
   pub fn stop_work_session(&mut self) {
@@ -39,35 +47,33 @@ impl App {
       let updated = self.repo.add_session(project_id, spent_time);
       if updated.is_err() {
         let err = updated.unwrap();
-
-        println!("err: {:?}", err);
         utils::notify("Error when updating project spent time");
       }
     }
+
+    utils::notify("Break Time?");
+    self.current_session = None;
+  }
+
+  pub fn stop_break_session(&mut self) {
+    utils::notify("Back to work?");
+    self.state = State::ConfirmWork;
+    self.current_session = None;
   }
 
   pub fn toggle_session(&mut self) {
-    if self.current_session.is_none() {
-      if let State::ConfirmBreak = self.state {
-        self.start_break_session();
-      } else {
-        self.start_work_session();
-      }
-      return;
-    }
-
     match self.state {
+      State::ConfirmBreak => {
+        self.start_break_session();
+      }
       State::WorkSession => {
         self.stop_work_session();
-        utils::notify("Break Time?");
         self.state = State::ConfirmBreak;
       }
       State::BreakSession => {
-        utils::notify("Back to work?");
-        self.state = State::ConfirmWork;
+        self.stop_break_session();
       }
-      _ => {}
+      _ => self.start_work_input(),
     }
-    self.current_session = None;
   }
 }
