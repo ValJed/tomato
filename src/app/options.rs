@@ -1,5 +1,7 @@
-use crate::structs::{App, State};
+use crate::structs::State;
+use crate::utils;
 use crate::utils::convert_bool_to_string;
+use crate::App;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 impl App {
@@ -51,12 +53,18 @@ impl App {
 
     let cur_value = self.options.data.get_value(option.0);
     match cur_value {
-      BoolOrInt::Int(val) => {}
-      BoolOrInt::Bool(val) => self.options.data.set_value(option.0, !val),
+      BoolOrInt::Int(_) => match option.0 {
+        OptionField::WorkDuration => self.state = State::WorkDurationInput,
+        OptionField::BreakDuration => self.state = State::BreakDurationInput,
+        _ => {}
+      },
+      BoolOrInt::Bool(val) => {
+        self.options.data.set_value(option.0, BoolOrInt::Bool(!val));
+        if self.repo.update_options(self.options.data.clone()).is_err() {
+          utils::notify("Error saving option");
+        }
+      }
     }
-
-    println!("cur_value: {:?}", cur_value);
-    // use option here
   }
 }
 
@@ -126,12 +134,28 @@ impl Options {
     }
   }
 
-  pub fn set_value(&self, field: OptionField, value: BoolOrInt) {
+  pub fn set_value(&mut self, field: OptionField, value: BoolOrInt) {
     match field {
-      OptionField::WorkDuration => {}
-      OptionField::BreakDuration => {}
-      OptionField::AskBeforeWork => {}
-      OptionField::AskBeforeBreak => {}
+      OptionField::WorkDuration => {
+        if let BoolOrInt::Int(v) = value {
+          self.work_duration = v;
+        }
+      }
+      OptionField::BreakDuration => {
+        if let BoolOrInt::Int(v) = value {
+          self.break_duration = v;
+        }
+      }
+      OptionField::AskBeforeWork => {
+        if let BoolOrInt::Bool(v) = value {
+          self.ask_before_work = v;
+        }
+      }
+      OptionField::AskBeforeBreak => {
+        if let BoolOrInt::Bool(v) = value {
+          self.ask_before_break = v;
+        }
+      }
     };
   }
 }
