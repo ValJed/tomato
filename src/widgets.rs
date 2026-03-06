@@ -273,6 +273,7 @@ impl Widget for &mut App {
 
     let main_cmd = match self.state {
       State::WorkInput | State::BreakInput => "<Enter>",
+      State::WorkDurationInput | State::BreakDurationInput => "<Enter>",
       _ => " <Space>",
     };
     let instructions = Title::from(Line::from(vec![
@@ -317,8 +318,10 @@ pub struct OptionsWidget<'a> {
 impl Widget for OptionsWidget<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
     let title = Title::from(" Options ".bold());
-    let instructions =
-      Title::from(Line::from(vec!["<U>".blue().bold(), " Update ".into()]));
+    let instructions = Title::from(Line::from(vec![
+      " <Enter>".blue().bold(),
+      " Update ".into(),
+    ]));
     let options_area = center(area, Length(50), Length(8));
 
     let lines = self.data.get_list();

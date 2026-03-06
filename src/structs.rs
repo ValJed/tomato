@@ -87,6 +87,8 @@ pub enum State {
   ProjectsInputUpdate,
   Calendar,
   Options,
+  WorkDurationInput,
+  BreakDurationInput,
 }
 
 impl Default for State {
@@ -95,6 +97,7 @@ impl Default for State {
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct Session {
   pub start: SystemTime,
   pub end: Option<SystemTime>,

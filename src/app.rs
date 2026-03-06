@@ -190,6 +190,22 @@ impl App {
         },
         frame.area(),
       ),
+      State::WorkDurationInput => frame.render_widget(
+        InputWidget {
+          title: " Set Work Duration (minutes): ",
+          width: 25,
+          input: &self.input,
+        },
+        frame.area(),
+      ),
+      State::BreakDurationInput => frame.render_widget(
+        InputWidget {
+          title: " Set Break Duration (minutes): ",
+          width: 25,
+          input: &self.input,
+        },
+        frame.area(),
+      ),
       _ => {}
     }
   }
@@ -200,6 +216,9 @@ impl App {
       Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
         match self.state {
           State::WorkInput | State::BreakInput => {
+            self.handle_num_input(key_event)
+          }
+          State::WorkDurationInput | State::BreakDurationInput => {
             self.handle_num_input(key_event)
           }
           State::ProjectsList => self.handle_projects_list_input(key_event),
@@ -218,6 +237,12 @@ impl App {
   fn handle_key_event(&mut self, key_event: KeyEvent) {
     match key_event.code {
       KeyCode::Char('q') => self.exit(),
+      KeyCode::Esc => {
+        if let State::WorkSession = self.state {
+          return;
+        }
+        self.state = State::None;
+      }
       KeyCode::Char(' ') => self.toggle_session(),
       KeyCode::Char('y') => match self.state {
         State::ConfirmBreak => self.start_break_input(),
@@ -271,6 +296,26 @@ impl App {
       KeyCode::Enter => match self.state {
         State::WorkInput => self.start_work_session(),
         State::BreakInput => self.start_break_session(),
+        State::WorkDurationInput => {
+          if let Ok(val) = self.input.parse::<u32>() {
+            self.options.data.work_duration = val;
+            if self.repo.update_options(self.options.data.clone()).is_err() {
+              utils::notify("Error saving work duration");
+            }
+          }
+          self.input.clear();
+          self.state = State::Options;
+        }
+        State::BreakDurationInput => {
+          if let Ok(val) = self.input.parse::<u32>() {
+            self.options.data.break_duration = val;
+            if self.repo.update_options(self.options.data.clone()).is_err() {
+              utils::notify("Error saving break duration");
+            }
+          }
+          self.input.clear();
+          self.state = State::Options;
+        }
         _ => {}
       },
       KeyCode::Char(char) => {
@@ -278,6 +323,10 @@ impl App {
           self.input =
             String::from(self.input.to_string() + char.to_string().as_str())
         }
+      }
+      KeyCode::Esc => {
+        self.input.clear();
+        self.state = State::Options;
       }
       _ => {}
     }
