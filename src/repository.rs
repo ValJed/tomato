@@ -92,12 +92,11 @@ impl Repository {
   pub fn update_options(
     &self,
     opts: Options,
-  ) -> Result<Options, rusqlite::Error> {
+  ) -> Result<usize, rusqlite::Error> {
     self.connection.execute(
             "UPDATE options SET work_duration = ?2, break_duration = ?3, ask_before_work = ?4, ask_before_break = ?5 WHERE id = ?1",
-            (options.id, options.work_duration, options.break_duration, options.ask_before_work, options.ask_before_break)
-        )?
-        Ok(())
+            (opts.id, opts.work_duration, opts.break_duration, opts.ask_before_work, opts.ask_before_break)
+        )
   }
 
   pub fn get_projects_in_progress(
