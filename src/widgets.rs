@@ -28,7 +28,7 @@ use crate::utils::{
 };
 use crate::{app::options::Options, utils::notify};
 
-const SELECTED_STYLE: Style = Style::new().bg(GRAY.c400);
+const SELECTED_STYLE: Style = Style::new().bg(Color::LightRed);
 
 pub struct CounterWidget {
   pub time: String,
@@ -206,19 +206,17 @@ impl Widget for CalendarWidget<'_> {
       .padding(Padding::new(1, 1, 1, 1));
 
     let cal_selected_color = match self.selected_section {
-      CalendarSection::Calendar => Color::Blue,
-      CalendarSection::List => Color::DarkGray,
+      CalendarSection::Calendar => Color::Red,
+      CalendarSection::List => Color::Blue,
     };
 
     let mut cal_event = CalendarEventStore::default();
     cal_event.add(self.selected_date, Style::default().bg(cal_selected_color));
-    let default_style = Style::default()
-      .add_modifier(Modifier::BOLD)
-      .bg(Color::Rgb(50, 50, 50));
+    let default_style = Style::default().add_modifier(Modifier::BOLD);
     let header_style = Style::default()
       .add_modifier(Modifier::BOLD)
       .add_modifier(Modifier::DIM)
-      .fg(Color::LightYellow);
+      .fg(Color::Yellow);
     let cal = Monthly::new(
       Date::from_calendar_date(
         self.selected_date.year(),
