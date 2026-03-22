@@ -1,7 +1,7 @@
+use crate::App;
 use crate::structs::State;
 use crate::utils;
 use crate::utils::convert_bool_to_string;
-use crate::App;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 
 impl App {
@@ -54,8 +54,14 @@ impl App {
     let cur_value = self.options.data.get_value(option.0);
     match cur_value {
       BoolOrInt::Int(_) => match option.0 {
-        OptionField::WorkDuration => self.state = State::WorkDurationInput,
-        OptionField::BreakDuration => self.state = State::BreakDurationInput,
+        OptionField::WorkDuration => {
+          self.input = self.options.data.work_duration.to_string();
+          self.state = State::WorkDurationInput;
+        }
+        OptionField::BreakDuration => {
+          self.input = self.options.data.break_duration.to_string();
+          self.state = State::BreakDurationInput;
+        }
         _ => {}
       },
       BoolOrInt::Bool(val) => {

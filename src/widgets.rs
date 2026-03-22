@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use ratatui::{
   buffer::Buffer,
   layout::{
@@ -270,8 +268,8 @@ impl Widget for &mut App {
     };
 
     let main_cmd = match self.state {
-      State::WorkInput | State::BreakInput => "<Enter>",
-      State::WorkDurationInput | State::BreakDurationInput => "<Enter>",
+      State::WorkInput | State::BreakInput => " <Enter>",
+      State::WorkDurationInput | State::BreakDurationInput => " <Enter>",
       _ => " <Space>",
     };
     let instructions = Title::from(Line::from(vec![

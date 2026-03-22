@@ -46,7 +46,6 @@ impl App {
     {
       let updated = self.repo.add_session(project_id, spent_time);
       if updated.is_err() {
-        let err = updated.unwrap();
         utils::notify("Error when updating project spent time");
       }
     }

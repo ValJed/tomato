@@ -137,7 +137,7 @@ impl App {
       State::WorkInput => frame.render_widget(
         InputWidget {
           title: " Set Time: ",
-          width: 25,
+          width: 20,
           input: &self.input,
         },
         frame.area(),
@@ -145,7 +145,7 @@ impl App {
       State::BreakInput => frame.render_widget(
         InputWidget {
           title: " Set Time: ",
-          width: 25,
+          width: 20,
           input: &self.input,
         },
         frame.area(),
@@ -192,7 +192,7 @@ impl App {
       ),
       State::WorkDurationInput => frame.render_widget(
         InputWidget {
-          title: " Set Work Duration (minutes): ",
+          title: " Work Duration: ",
           width: 25,
           input: &self.input,
         },
@@ -200,7 +200,7 @@ impl App {
       ),
       State::BreakDurationInput => frame.render_widget(
         InputWidget {
-          title: " Set Break Duration (minutes): ",
+          title: " Break Duration: ",
           width: 25,
           input: &self.input,
         },
@@ -326,7 +326,7 @@ impl App {
       }
       KeyCode::Esc => {
         self.input.clear();
-        self.state = State::Options;
+        self.state = State::None;
       }
       _ => {}
     }
