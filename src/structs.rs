@@ -1,4 +1,4 @@
-use crate::app::options::{Options, OptionsState};
+use crate::app::options::OptionsState;
 use dirs::data_dir;
 use ratatui::widgets::ListState;
 use serde::{Deserialize, Serialize};

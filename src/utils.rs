@@ -1,8 +1,5 @@
 use notify_rust::Notification;
-use ratatui::{
-  layout::{Constraint, Flex, Layout, Rect},
-  text::Line,
-};
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use std::time::SystemTime;
 
 pub fn render_timer(start: SystemTime, duration: u32) -> Option<u32> {

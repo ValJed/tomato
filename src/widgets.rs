@@ -6,7 +6,7 @@ use ratatui::{
     Rect,
   },
   prelude::{Direction, Layout},
-  style::{Color, Modifier, Style, Stylize, palette::tailwind::GRAY},
+  style::{Color, Modifier, Style, Stylize},
   symbols::border,
   text::Line,
   widgets::{
