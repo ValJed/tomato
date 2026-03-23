@@ -71,8 +71,6 @@ impl Widget for ProjectsListWidget<'_> {
       " Finished ".into(),
       "<U>".blue().bold(),
       " Update ".into(),
-      "<I>".blue().bold(),
-      " Info ".into(),
     ]));
     let block = Block::bordered()
       .title(title.alignment(Alignment::Center))
